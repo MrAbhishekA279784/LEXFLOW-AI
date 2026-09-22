@@ -4,12 +4,12 @@
  */
 
 import crypto from 'crypto';
-import { ClauseItem } from '../../../types';
-import { LegalAuthority, LegalGraph } from '../../types/backendTypes';
+import { ClauseItem } from '../../../../types';
+import { LegalAuthority, LegalGraph } from '../../../types/backendTypes';
 import { AI_CONFIG, estimateTokens } from './tokenBudget';
 import { UserAIPreferences, getUserAIContext } from './personalizationContext';
-import { memoryStore } from '../../repositories/memoryStore';
-import { logger } from '../../utils/logger';
+import { memoryStore } from '../../../repositories/memoryStore';
+import { logger } from '../../../utils/logger';
 
 export interface CompactClause {
   id: string;
@@ -146,7 +146,7 @@ export class ContextBuilder {
       actOrCourt: s.actOrCourt,
       sectionOrArticle: s.sectionOrArticle,
       title: s.title,
-      summary: s.contentSummary,
+      summary: s.summary,
       relevanceScore: 1 - idx * 0.1,
     }));
 
@@ -156,7 +156,7 @@ export class ContextBuilder {
       id: n.id,
       label: n.label,
       type: n.type,
-      clauseRef: n.clauseRef,
+      clauseRef: n.sourceClauseId,
     }));
     const compactEdges: CompactGraphEdge[] = (graphData?.edges || []).slice(0, 20).map(e => ({
       source: e.source,
@@ -210,8 +210,7 @@ export class ContextBuilder {
   private static scoreClauseRisk(clause: ClauseItem): number {
     let score = 0;
     const text = `${clause.title} ${clause.summary} ${clause.fullText}`.toLowerCase();
-    if (clause.riskLevel === 'critical') score += 15;
-    if (clause.riskLevel === 'high') score += 10;
+    if (clause.riskLevel === 'high') score += 12;
     if (clause.riskLevel === 'medium') score += 5;
 
     if (text.includes('penalty') || text.includes('per day')) score += 8;
