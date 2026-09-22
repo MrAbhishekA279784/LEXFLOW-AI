@@ -1,0 +1,6 @@
+{
+  "name": "LEXFLOW",
+  "description": "Turn Legal Complexity Into Clear Next Steps. Premium AI-powered legal document intelligence, interactive Legal Action Graph, and What-If scenario stress-testing platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
