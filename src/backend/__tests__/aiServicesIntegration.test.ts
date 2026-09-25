@@ -17,7 +17,7 @@ describe('AI Services End-to-End Integration', () => {
   });
 
   it('ComparisonService should compare two documents and produce structured risk & protection deltas', async () => {
-    const comparison = await ComparisonService.compareDocuments('doc-rental', 'doc-rental', 'user-ahamed-001');
+    const comparison = await ComparisonService.compareDocuments('doc-rental', 'doc-rental', 'test-user-001');
 
     expect(comparison).toBeDefined();
     expect(comparison.summary).toBeDefined();
@@ -41,7 +41,7 @@ describe('AI Services End-to-End Integration', () => {
     const result = await ScenarioOrchestrator.simulateScenario({
       documentId: 'doc-rental',
       inputPrompt: '3 mahine rent nahi diya aur flat chhod diya',
-      userId: 'user-ahamed-001',
+      userId: 'test-user-001',
     });
 
     expect(result).toBeDefined();

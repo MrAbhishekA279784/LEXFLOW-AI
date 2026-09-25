@@ -63,7 +63,7 @@ export const AssistantScreen: React.FC = () => {
 
                 {/* AI Response Card */}
                 <div className="space-y-2.5 flex-1">
-                  <div className="glass-card p-4 rounded-2xl rounded-tl-xs border border-white/90 text-xs space-y-2.5 text-[#151515]">
+                  <div className="glass-panel p-4 rounded-2xl rounded-tl-xs border border-white/90 text-xs space-y-2.5 text-[#151515]" role="status" aria-live="polite">
                     <p className="leading-relaxed font-normal">
                       {msg.text.split('Note:')[0]}
                     </p>

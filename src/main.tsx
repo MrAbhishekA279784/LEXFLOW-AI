@@ -3,8 +3,16 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Suppress benign ResizeObserver notifications loop errors
+window.addEventListener('error', (e) => {
+  if (e.message && e.message.includes('ResizeObserver')) {
+    e.stopImmediatePropagation();
+  }
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
   </StrictMode>,
 );
+

@@ -16,6 +16,16 @@ export function getSupabaseClient(): SupabaseClient | null {
     return null;
   }
 
+  // Validate URL protocol
+  try {
+    const parsed = new URL(supabaseUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
   try {
     supabaseInstance = createClient(supabaseUrl, supabaseKey, {
       auth: {

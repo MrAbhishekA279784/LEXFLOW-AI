@@ -10,8 +10,10 @@ import {
   ILawyerKitRepository, 
   ILegalSourceRepository,
   IComplianceAuditRepository,
+  IChunkRepository,
   DocumentRecord,
-  AnalysisJobRecord
+  AnalysisJobRecord,
+  DocumentChunk
 } from './types';
 import { 
   LegalModelData, 
@@ -28,6 +30,7 @@ import { ComplianceAuditRecord } from '../services/complianceAudit/types';
 import { INITIAL_DOCUMENTS, RENTAL_CLAUSES, DEFAULT_SCENARIO } from '../../data/initialData';
 import { INITIAL_DOCUMENT_VERSIONS } from '../../data/documentVersionsData';
 import { INITIAL_COMPLIANCE_AUDIT } from '../data/complianceAuditSeedData';
+import { EmbeddingService } from '../services/retrieval/embeddingService';
 import { v4 as uuidv4 } from 'uuid';
 
 export class MemoryStore implements 
@@ -41,10 +44,12 @@ export class MemoryStore implements
   IConflictRepository, 
   ILawyerKitRepository, 
   ILegalSourceRepository,
-  IComplianceAuditRepository 
+  IComplianceAuditRepository,
+  IChunkRepository
 {
   private documents: Map<string, DocumentRecord> = new Map();
   private clauses: Map<string, ClauseItem[]> = new Map();
+  private chunks: Map<string, DocumentChunk[]> = new Map();
   private legalModels: Map<string, LegalModelData> = new Map();
   private graphs: Map<string, LegalGraph> = new Map();
   private jobs: Map<string, AnalysisJobRecord> = new Map();
@@ -55,36 +60,13 @@ export class MemoryStore implements
   private legalSources: LegalAuthority[] = [];
   private versions: Map<string, DocumentVersion[]> = new Map();
   private complianceAudits: Map<string, ComplianceAuditRecord> = new Map();
+  private seededUsers: Set<string> = new Set();
 
   constructor() {
-    this.seedInitialData();
+    this.seedSharedStaticData();
   }
 
-  private seedInitialData() {
-    const defaultUserId = 'user-ahamed-001';
-
-    // Seed Documents
-    INITIAL_DOCUMENTS.forEach(doc => {
-      const record: DocumentRecord = {
-        ...doc,
-        userId: defaultUserId,
-        size: doc.size,
-        status: doc.status as DocumentStatus,
-      };
-      this.documents.set(doc.id, record);
-    });
-
-    // Seed Versions
-    Object.entries(INITIAL_DOCUMENT_VERSIONS).forEach(([docId, vers]) => {
-      this.versions.set(docId, [...vers]);
-    });
-
-    // Seed Rental Agreement Clauses
-    this.clauses.set('doc-rental', [...RENTAL_CLAUSES]);
-
-    // Seed Compliance Audit for Rental Agreement
-    this.complianceAudits.set(INITIAL_COMPLIANCE_AUDIT.id, { ...INITIAL_COMPLIANCE_AUDIT });
-
+  private seedSharedStaticData() {
     // Seed Indian Legal Authorities catalog
     this.legalSources = [
       {
@@ -153,12 +135,15 @@ export class MemoryStore implements
       }
     ];
 
-    // Seed structured Legal Model for rental agreement
+    // Seed Clauses & Graphs for standard document templates
+    this.clauses.set('doc-rental', [...RENTAL_CLAUSES]);
+    this.clauses.set('doc-rental-001', [...RENTAL_CLAUSES]);
+
     const rentalLegalModel: LegalModelData = {
       documentId: 'doc-rental',
       parties: [
         { id: 'p1', name: 'Dr. Ramesh Sharma', role: 'landlord', identifier: 'Lessor / Owner', sourceClauseId: 'cl-preamble', sourcePage: 1 },
-        { id: 'p2', name: 'Ahamed Khan', role: 'tenant', identifier: 'Lessee / Occupant', sourceClauseId: 'cl-preamble', sourcePage: 1 }
+        { id: 'p2', name: 'Tenant', role: 'tenant', identifier: 'Lessee / Occupant', sourceClauseId: 'cl-preamble', sourcePage: 1 }
       ],
       obligations: [
         { id: 'obl-1', actor: 'tenant', action: 'pay_rent', description: 'Pay monthly rent of ₹25,000 on or before the 5th of each month', frequency: 'monthly', dueDay: 5, sourceClauseId: 'cl-1', sourcePage: 2, confidence: 0.98 },
@@ -200,11 +185,11 @@ export class MemoryStore implements
       ]
     };
     this.legalModels.set('doc-rental', rentalLegalModel);
+    this.legalModels.set('doc-rental-001', rentalLegalModel);
 
-    // Seed Graph for doc-rental
     const rentalGraph: LegalGraph = {
       nodes: [
-        { id: 'party-tenant', type: 'Party', label: 'Tenant (Ahamed Khan)', data: { role: 'tenant' } },
+        { id: 'party-tenant', type: 'Party', label: 'Tenant', data: { role: 'tenant' } },
         { id: 'party-landlord', type: 'Party', label: 'Landlord (Dr. Ramesh)', data: { role: 'landlord' } },
         { id: 'obl-rent', type: 'Obligation', label: 'Pay Rent (₹25k/mo on 5th)', data: { amount: 25000 }, sourceClauseId: 'cl-1', sourcePage: 2 },
         { id: 'pmt-deposit', type: 'Payment', label: 'Security Deposit (₹75k)', data: { amount: 75000 }, sourceClauseId: 'cl-4', sourcePage: 3 },
@@ -234,6 +219,42 @@ export class MemoryStore implements
       ]
     };
     this.graphs.set('doc-rental', rentalGraph);
+    this.graphs.set('doc-rental-001', rentalGraph);
+  }
+
+  private ensureUserSeeded(userId: string) {
+    if (!userId || this.seededUsers.has(userId)) return;
+    this.seededUsers.add(userId);
+
+    // Seed initial demo documents specifically for this authenticated user
+    INITIAL_DOCUMENTS.forEach(doc => {
+      const key = `${doc.id}:${userId}`;
+      if (!this.documents.has(key)) {
+        this.documents.set(key, {
+          ...doc,
+          userId,
+          size: doc.size,
+          status: doc.status as DocumentStatus,
+        });
+      }
+    });
+
+    // Seed versions for this user
+    Object.entries(INITIAL_DOCUMENT_VERSIONS).forEach(([docId, vers]) => {
+      const key = `${docId}:${userId}`;
+      if (!this.versions.has(key)) {
+        this.versions.set(key, [...vers]);
+      }
+    });
+
+    // Seed compliance audit for this user
+    const auditKey = `${INITIAL_COMPLIANCE_AUDIT.id}:${userId}`;
+    if (!this.complianceAudits.has(auditKey)) {
+      this.complianceAudits.set(auditKey, {
+        ...INITIAL_COMPLIANCE_AUDIT,
+        userId,
+      });
+    }
   }
 
   // Document Methods
@@ -254,55 +275,74 @@ export class MemoryStore implements
       storagePath: doc.storagePath,
       rawText: doc.rawText
     };
-    this.documents.set(id, newDoc);
+    this.documents.set(`${id}:${doc.userId}`, newDoc);
     return newDoc;
   }
 
   async findById(id: string, userId?: string): Promise<DocumentRecord | null> {
-    const doc = this.documents.get(id);
-    if (!doc) return null;
-    if (userId && doc.userId !== userId && doc.userId !== 'user-ahamed-001') {
+    if (userId) {
+      this.ensureUserSeeded(userId);
+      const doc = this.documents.get(`${id}:${userId}`);
+      if (doc) return doc;
       return null;
     }
-    return doc;
+    // Fallback search when no userId specified (internal/admin)
+    for (const doc of this.documents.values()) {
+      if (doc.id === id) {
+        return doc;
+      }
+    }
+    return null;
   }
 
-  async listByUser(userId: string): Promise<DocumentRecord[]> {
-    const all = Array.from(this.documents.values());
-    return all.filter(d => d.userId === userId || d.userId === 'user-ahamed-001');
+  async listByUser(userId: string, options?: { page?: number; limit?: number }): Promise<DocumentRecord[]> {
+    this.ensureUserSeeded(userId);
+    const page = Math.max(1, Math.floor(Number(options?.page) || 1));
+    const rawLimit = Number(options?.limit);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(Math.floor(rawLimit), 100) : 50;
+    const offset = (page - 1) * limit;
+
+    const userDocs = Array.from(this.documents.values()).filter(d => d.userId === userId);
+    return userDocs.slice(offset, offset + limit);
   }
 
-  async updateStatus(id: string, status: DocumentStatus, updates?: Partial<DocumentRecord>): Promise<DocumentRecord> {
-    const doc = this.documents.get(id);
+  async updateStatus(id: string, status: DocumentStatus, updates?: string | Partial<DocumentRecord>): Promise<DocumentRecord> {
+    const isString = typeof updates === 'string';
+    const actualUpdates = isString ? { summary: updates as string } : (updates as Partial<DocumentRecord> || {});
+    const doc = await this.findById(id, actualUpdates.userId);
     if (!doc) throw new Error(`Document ${id} not found`);
     const updated: DocumentRecord = {
       ...doc,
       status,
-      ...updates
+      ...actualUpdates
     };
-    this.documents.set(id, updated);
+    this.documents.set(`${id}:${doc.userId}`, updated);
     return updated;
   }
 
   async delete(id: string, userId?: string): Promise<boolean> {
-    const doc = this.documents.get(id);
+    const doc = await this.findById(id, userId);
     if (!doc) return false;
-    if (userId && doc.userId !== userId && doc.userId !== 'user-ahamed-001') return false;
-    this.documents.delete(id);
+    this.documents.delete(`${id}:${doc.userId}`);
     this.clauses.delete(id);
     this.legalModels.delete(id);
     this.graphs.delete(id);
-    this.versions.delete(id);
+    this.versions.delete(`${id}:${doc.userId}`);
     return true;
   }
 
   // Versioning Methods
   async listVersions(documentId: string): Promise<DocumentVersion[]> {
-    return this.versions.get(documentId) || [];
+    for (const [key, vers] of this.versions.entries()) {
+      if (key === documentId || key.startsWith(`${documentId}:`)) {
+        return vers;
+      }
+    }
+    return [];
   }
 
   async saveVersion(documentId: string, version: Partial<DocumentVersion>): Promise<DocumentVersion> {
-    const existing = this.versions.get(documentId) || [];
+    const existing = await this.listVersions(documentId);
     const newVer: DocumentVersion = {
       id: version.id || `ver-${uuidv4().substring(0, 8)}`,
       documentId,
@@ -330,10 +370,10 @@ export class MemoryStore implements
   }
 
   async revertVersion(documentId: string, versionId: string, note?: string): Promise<{ document: DocumentRecord; version: DocumentVersion }> {
-    const doc = this.documents.get(documentId);
+    const doc = await this.findById(documentId);
     if (!doc) throw new Error(`Document ${documentId} not found`);
 
-    const vers = this.versions.get(documentId) || [];
+    const vers = await this.listVersions(documentId);
     const target = vers.find(v => v.id === versionId);
     if (!target) throw new Error(`Version ${versionId} not found`);
 
@@ -365,7 +405,7 @@ export class MemoryStore implements
     doc.summary = target.summary;
     doc.riskCount = target.riskCount;
     doc.clauseCount = target.clauseCount;
-    this.documents.set(documentId, doc);
+    this.documents.set(`${documentId}:${doc.userId}`, doc);
 
     if (target.snapshotClauses && target.snapshotClauses.length > 0) {
       this.clauses.set(documentId, [...target.snapshotClauses]);
@@ -380,8 +420,16 @@ export class MemoryStore implements
     return clauses;
   }
 
+  async saveClauses(documentId: string, clauses: ClauseItem[], userId?: string): Promise<ClauseItem[]> {
+    return this.saveMany(documentId, clauses);
+  }
+
   async listByDocument(documentId: string): Promise<ClauseItem[]> {
     return this.clauses.get(documentId) || [];
+  }
+
+  async getClausesByDocument(documentId: string, userId?: string): Promise<ClauseItem[]> {
+    return this.listByDocument(documentId);
   }
 
   async findClauseById(documentId: string, clauseId: string): Promise<ClauseItem | null> {
@@ -395,27 +443,76 @@ export class MemoryStore implements
     return model;
   }
 
+  async saveLegalModel(documentId: string, model: LegalModelData, userId?: string): Promise<LegalModelData> {
+    return this.saveModel(documentId, model);
+  }
+
   async findModelByDocument(documentId: string): Promise<LegalModelData | null> {
     return this.legalModels.get(documentId) || null;
   }
 
+  async getLegalModel(documentId: string, userId?: string): Promise<LegalModelData | null> {
+    return this.findModelByDocument(documentId);
+  }
+
   // Graph Methods
   async saveGraph(documentId: string, graph: LegalGraph): Promise<LegalGraph> {
-    this.graphs.set(documentId, graph);
-    return graph;
+    const stampedGraph: LegalGraph = {
+      documentId,
+      nodes: graph.nodes.map(n => ({
+        ...n,
+        documentId: n.documentId || documentId,
+        data: { ...(n.data || {}) }
+      })),
+      edges: graph.edges.map(e => ({
+        ...e,
+        documentId: e.documentId || documentId
+      })),
+      metadata: {
+        generatedAt: graph.metadata?.generatedAt || new Date().toISOString(),
+        nodeCount: graph.nodes.length,
+        edgeCount: graph.edges.length,
+        isValid: graph.metadata?.isValid ?? true,
+        errors: graph.metadata?.errors || []
+      }
+    };
+    this.graphs.set(documentId, stampedGraph);
+    return stampedGraph;
   }
 
   async findGraphByDocument(documentId: string): Promise<LegalGraph | null> {
-    return this.graphs.get(documentId) || null;
+    const g = this.graphs.get(documentId);
+    if (!g) return null;
+    return {
+      documentId,
+      nodes: g.nodes.map(n => ({ ...n, data: { ...(n.data || {}) } })),
+      edges: g.edges.map(e => ({ ...e })),
+      metadata: g.metadata || {
+        generatedAt: new Date().toISOString(),
+        nodeCount: g.nodes.length,
+        edgeCount: g.edges.length,
+        isValid: true
+      }
+    };
+  }
+
+  async getGraphByDocument(documentId: string, userId?: string): Promise<LegalGraph | null> {
+    return this.findGraphByDocument(documentId);
   }
 
   // Analysis Jobs
-  async createJob(job: Omit<AnalysisJobRecord, 'id' | 'startedAt'>): Promise<AnalysisJobRecord> {
-    const id = `job-${uuidv4().substring(0, 8)}`;
+  async createJob(job: Partial<AnalysisJobRecord> & { documentId: string; userId: string }): Promise<AnalysisJobRecord> {
+    const id = job.id || `job-${uuidv4().substring(0, 8)}`;
     const record: AnalysisJobRecord = {
-      ...job,
       id,
-      startedAt: new Date().toISOString()
+      documentId: job.documentId,
+      userId: job.userId,
+      status: job.status || 'uploaded',
+      currentStep: job.currentStep || 'Job started',
+      progressPercentage: job.progressPercentage || 0,
+      errorMessage: job.errorMessage,
+      startedAt: job.startedAt || new Date().toISOString(),
+      completedAt: job.completedAt
     };
     this.jobs.set(id, record);
     return record;
@@ -425,9 +522,17 @@ export class MemoryStore implements
     return this.jobs.get(id) || null;
   }
 
+  async getJobById(id: string): Promise<AnalysisJobRecord | null> {
+    return this.findJobById(id);
+  }
+
   async findJobByDocument(documentId: string): Promise<AnalysisJobRecord | null> {
     const list = Array.from(this.jobs.values());
     return list.filter(j => j.documentId === documentId).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] || null;
+  }
+
+  async getJobByDocumentId(documentId: string): Promise<AnalysisJobRecord | null> {
+    return this.findJobByDocument(documentId);
   }
 
   async updateJob(id: string, updates: Partial<AnalysisJobRecord>): Promise<AnalysisJobRecord> {
@@ -450,17 +555,21 @@ export class MemoryStore implements
   async findScenarioById(id: string, userId?: string): Promise<ScenarioSimulationResult | null> {
     const scen = this.scenarios.get(id);
     if (!scen) return null;
-    if (userId && scen.userId !== userId && scen.userId !== 'user-ahamed-001') return null;
+    if (userId && scen.userId !== userId) return null;
     return scen;
   }
 
   async listScenariosByDocument(documentId: string, userId?: string): Promise<ScenarioSimulationResult[]> {
     const all = Array.from(this.scenarios.values());
-    return all.filter(s => s.documentId === documentId && (!userId || s.userId === userId || s.userId === 'user-ahamed-001'));
+    return all.filter(s => s.documentId === documentId && (!userId || s.userId === userId));
+  }
+
+  async findScenariosByDocument(documentId: string, userId?: string): Promise<ScenarioSimulationResult[]> {
+    return this.listScenariosByDocument(documentId, userId);
   }
 
   // Risk Methods
-  async saveRisks(documentId: string, risks: RiskFinding[]): Promise<RiskFinding[]> {
+  async saveRisks(documentId: string, risks: RiskFinding[], userId?: string): Promise<RiskFinding[]> {
     this.risks.set(documentId, risks);
     return risks;
   }
@@ -469,8 +578,12 @@ export class MemoryStore implements
     return this.risks.get(documentId) || [];
   }
 
+  async getRisksByDocument(documentId: string, userId?: string): Promise<RiskFinding[]> {
+    return this.listRisksByDocument(documentId);
+  }
+
   // Conflict Methods
-  async saveConflicts(documentId: string, conflicts: ConflictFinding[]): Promise<ConflictFinding[]> {
+  async saveConflicts(documentId: string, conflicts: ConflictFinding[], userId?: string): Promise<ConflictFinding[]> {
     this.conflicts.set(documentId, conflicts);
     return conflicts;
   }
@@ -479,22 +592,36 @@ export class MemoryStore implements
     return this.conflicts.get(documentId) || [];
   }
 
-  // Lawyer Kit Methods
-  async saveKit(kit: LawyerKitData & { userId: string }): Promise<LawyerKitData> {
-    this.lawyerKits.set(kit.id, kit);
-    return kit;
+  async getConflictsByDocument(documentId: string, userId?: string): Promise<ConflictFinding[]> {
+    return this.listConflictsByDocument(documentId);
   }
+
+  // Lawyer Kit Methods
+  async saveKit(kit: LawyerKitData & { userId?: string }): Promise<LawyerKitData> {
+    const fullKit = { ...kit, userId: kit.userId || 'demo-user-123' };
+    this.lawyerKits.set(kit.id, fullKit);
+    return fullKit;
+  }
+
+  async saveLawyerKit(kit: LawyerKitData, userId?: string): Promise<LawyerKitData> {
+    return this.saveKit({ ...kit, userId: userId || kit.userId });
+  }
+
 
   async findKitById(id: string, userId?: string): Promise<LawyerKitData | null> {
     const kit = this.lawyerKits.get(id);
     if (!kit) return null;
-    if (userId && kit.userId !== userId && kit.userId !== 'user-ahamed-001') return null;
+    if (userId && kit.userId !== userId) return null;
     return kit;
   }
 
   async findKitByDocument(documentId: string, userId?: string): Promise<LawyerKitData | null> {
     const list = Array.from(this.lawyerKits.values());
-    return list.find(k => k.documentId === documentId && (!userId || k.userId === userId || k.userId === 'user-ahamed-001')) || null;
+    return list.slice().reverse().find(k => k.documentId === documentId && (!userId || k.userId === userId)) || null;
+  }
+
+  async getLawyerKitByDocument(documentId: string, userId?: string): Promise<LawyerKitData | null> {
+    return this.findKitByDocument(documentId, userId);
   }
 
   // Legal Source Search
@@ -514,31 +641,55 @@ export class MemoryStore implements
       .map(s => s.src);
   }
 
+  async saveLegalSources(sources: LegalAuthority[]): Promise<LegalAuthority[]> {
+    this.legalSources = [...this.legalSources, ...sources];
+    return sources;
+  }
+
   async listAuthoritative(): Promise<LegalAuthority[]> {
     return [...this.legalSources];
   }
 
   // Compliance Audit Repository Methods
   async saveComplianceAudit(audit: ComplianceAuditRecord): Promise<ComplianceAuditRecord> {
-    this.complianceAudits.set(audit.id, { ...audit });
+    const key = audit.userId ? `${audit.id}:${audit.userId}` : audit.id;
+    this.complianceAudits.set(key, { ...audit });
     return { ...audit };
   }
 
   async findComplianceAuditById(id: string, userId?: string): Promise<ComplianceAuditRecord | null> {
-    const audit = this.complianceAudits.get(id);
-    if (!audit) return null;
-    if (userId && audit.userId !== userId && audit.userId !== 'user-ahamed-001') return null;
-    return { ...audit };
+    if (userId) {
+      this.ensureUserSeeded(userId);
+      const audit = this.complianceAudits.get(`${id}:${userId}`);
+      if (audit) return { ...audit };
+    }
+    for (const audit of this.complianceAudits.values()) {
+      if (audit.id === id && (!userId || audit.userId === userId)) {
+        return { ...audit };
+      }
+    }
+    return null;
+  }
+
+  async getComplianceAuditById(id: string, userId?: string): Promise<ComplianceAuditRecord | null> {
+    return this.findComplianceAuditById(id, userId);
   }
 
   async listComplianceAuditsByDocument(documentId: string, userId?: string): Promise<ComplianceAuditRecord[]> {
+    if (userId) {
+      this.ensureUserSeeded(userId);
+    }
     return Array.from(this.complianceAudits.values())
-      .filter(a => a.documentId === documentId && (!userId || a.userId === userId || a.userId === 'user-ahamed-001'))
+      .filter(a => a.documentId === documentId && (!userId || a.userId === userId))
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
   }
 
+  async getComplianceAuditsByDocument(documentId: string, userId?: string): Promise<ComplianceAuditRecord[]> {
+    return this.listComplianceAuditsByDocument(documentId, userId);
+  }
+
   async updateComplianceAudit(id: string, updates: Partial<ComplianceAuditRecord>): Promise<ComplianceAuditRecord> {
-    const existing = this.complianceAudits.get(id);
+    const existing = await this.findComplianceAuditById(id, updates.userId);
     if (!existing) {
       throw new Error(`Compliance audit not found: ${id}`);
     }
@@ -550,8 +701,56 @@ export class MemoryStore implements
       debateLog: updates.debateLog || existing.debateLog,
       applicableAuthorities: updates.applicableAuthorities || existing.applicableAuthorities
     };
-    this.complianceAudits.set(id, updated);
+    const key = updated.userId ? `${updated.id}:${updated.userId}` : updated.id;
+    this.complianceAudits.set(key, updated);
     return { ...updated };
+  }
+
+  // Chunk Repository Methods
+  async saveChunks(chunks: DocumentChunk[]): Promise<DocumentChunk[]> {
+    if (!chunks || chunks.length === 0) return [];
+    const docId = chunks[0].documentId;
+    this.chunks.set(docId, [...chunks]);
+    return [...chunks];
+  }
+
+  async getChunksByDocument(documentId: string): Promise<DocumentChunk[]> {
+    return this.chunks.get(documentId) || [];
+  }
+
+  async searchChunksByVector(
+    documentId: string, 
+    queryEmbedding: number[], 
+    topK = 5
+  ): Promise<{ chunk: DocumentChunk; similarity: number }[]> {
+    const docChunks = await this.getChunksByDocument(documentId);
+    if (!docChunks || docChunks.length === 0) return [];
+
+    const scored = docChunks.map(chunk => {
+      const vec = chunk.embedding || EmbeddingService.generateDeterministicVector(chunk.chunkText);
+      const similarity = EmbeddingService.cosineSimilarity(queryEmbedding, vec);
+      return { chunk, similarity };
+    });
+
+    return scored
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+  }
+
+  async searchLegalSourcesByVector(
+    queryEmbedding: number[], 
+    topK = 5
+  ): Promise<{ source: LegalAuthority; similarity: number }[]> {
+    const scored = this.legalSources.map(source => {
+      const text = `${source.title} ${source.summary} ${source.actOrCourt} ${source.sectionOrArticle}`;
+      const vec = EmbeddingService.generateDeterministicVector(text);
+      const similarity = EmbeddingService.cosineSimilarity(queryEmbedding, vec);
+      return { source, similarity };
+    });
+
+    return scored
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
   }
 }
 

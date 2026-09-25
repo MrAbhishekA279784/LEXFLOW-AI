@@ -178,14 +178,14 @@ export const NewRevisionModal: React.FC<NewRevisionModalProps> = ({
             </label>
             <div className="flex items-center gap-2">
               {[
-                { id: 'mitigated', label: 'Risk Mitigated (Safer)', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-                { id: 'neutral', label: 'Neutral', color: 'text-stone-700 bg-stone-50 border-stone-200' },
-                { id: 'increased', label: 'Risk Increased', color: 'text-amber-700 bg-amber-50 border-amber-200' },
+                { id: 'mitigated' as const, label: 'Risk Mitigated (Safer)', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+                { id: 'neutral' as const, label: 'Neutral', color: 'text-stone-700 bg-stone-50 border-stone-200' },
+                { id: 'increased' as const, label: 'Risk Increased', color: 'text-amber-700 bg-amber-50 border-amber-200' },
               ].map((r) => (
                 <button
                   type="button"
                   key={r.id}
-                  onClick={() => setRiskImpact(r.id as any)}
+                  onClick={() => setRiskImpact(r.id)}
                   className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold border transition-all cursor-pointer ${
                     riskImpact === r.id ? `${r.color} ring-2 ring-[#FF6B22]/30 shadow-2xs` : 'bg-white text-stone-500 border-stone-200'
                   }`}

@@ -8,7 +8,9 @@ import { ClauseItem } from '../../../../types';
 import { LegalAuthority, LegalGraph } from '../../../types/backendTypes';
 import { AI_CONFIG, estimateTokens } from './tokenBudget';
 import { UserAIPreferences, getUserAIContext } from './personalizationContext';
-import { memoryStore } from '../../../repositories/memoryStore';
+import { repository } from '../../../repositories';
+import { DocumentChunker } from '../../retrieval/documentChunker';
+import { HybridRetrievalService } from '../../retrieval/hybridRetrievalService';
 import { logger } from '../../../utils/logger';
 
 export interface CompactClause {
@@ -93,28 +95,29 @@ export class ContextBuilder {
     // 1. Fetch user personalization preferences
     const personalizationProfile = await getUserAIContext(userId);
 
-    // 2. Load clauses from repository
-    const allClauses = await memoryStore.listByDocument(documentId);
+    // 2. Load clauses & chunks from repository
+    const allClauses = await repository.listByDocument(documentId);
+    let chunks = await repository.getChunksByDocument(documentId);
+
+    if ((!chunks || chunks.length === 0) && allClauses.length > 0) {
+      chunks = DocumentChunker.chunkDocument(documentId, allClauses);
+      await repository.saveChunks(chunks);
+    }
     
-    // 3. Rank clauses by relevance to query/scenario/audit
-    let selectedClauses = [...allClauses];
+    // 3. Perform Hybrid Vector + Lexical Retrieval over clauses & chunks
+    const retrievalQuery = scenarioPrompt || 'compliance obligations penalties notice termination security deposit liability breach';
+    const hybridResult = await HybridRetrievalService.retrieveHybrid({
+      documentId,
+      query: retrievalQuery,
+      topK: 5,
+      clauses: allClauses,
+      chunks
+    });
+
+    let selectedClauses = hybridResult.relevantClauses.length > 0 ? hybridResult.relevantClauses : [...allClauses];
 
     if (targetClauseIds && targetClauseIds.length > 0) {
       selectedClauses = allClauses.filter(c => targetClauseIds.includes(c.id) || targetClauseIds.includes(c.section));
-    } else if (scenarioPrompt) {
-      const q = scenarioPrompt.toLowerCase();
-      selectedClauses.sort((a, b) => {
-        const aScore = this.scoreClauseRelevance(a, q);
-        const bScore = this.scoreClauseRelevance(b, q);
-        return bScore - aScore;
-      });
-    } else {
-      // Default: prioritize clauses with penalties, termination, risks, lock-in, forfeiture
-      selectedClauses.sort((a, b) => {
-        const aScore = this.scoreClauseRisk(a);
-        const bScore = this.scoreClauseRisk(b);
-        return bScore - aScore;
-      });
     }
 
     // Enforce token budget on clauses
@@ -139,9 +142,9 @@ export class ContextBuilder {
       accumulatedTokens += clauseTokens;
     }
 
-    // 4. Retrieve and rank authoritative legal sources
-    const allSources = await memoryStore.listAuthoritative();
-    const budgetedAuthorities: CompactLegalAuthority[] = allSources.slice(0, 5).map((s, idx) => ({
+    // 4. Retrieve and rank authoritative legal sources via hybrid retrieval
+    const authoritiesToUse = hybridResult.relevantAuthorities;
+    const budgetedAuthorities: CompactLegalAuthority[] = authoritiesToUse.slice(0, 5).map((s, idx) => ({
       id: s.id,
       actOrCourt: s.actOrCourt,
       sectionOrArticle: s.sectionOrArticle,
@@ -151,7 +154,7 @@ export class ContextBuilder {
     }));
 
     // 5. Load graph nodes and edges
-    const graphData = await memoryStore.findGraphByDocument(documentId);
+    const graphData = await repository.findGraphByDocument(documentId);
     const compactNodes: CompactGraphNode[] = (graphData?.nodes || []).slice(0, 15).map(n => ({
       id: n.id,
       label: n.label,

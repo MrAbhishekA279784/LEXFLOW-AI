@@ -9,6 +9,9 @@ import { AuditEvidenceService } from '../services/complianceAudit/auditEvidenceS
 import { ComplianceAuditService } from '../services/complianceAudit/complianceAuditService';
 import { repository } from '../repositories';
 import { RENTAL_CLAUSES } from '../../data/initialData';
+import { signJwtToken } from '../utils/jwt';
+
+const TEST_TOKEN = signJwtToken({ id: 'test-user-001', email: 'test@example.com' });
 
 function createTestApp() {
   const app = express();
@@ -24,7 +27,10 @@ async function invokeEndpoint(app: express.Application, method: string, url: str
   const req = {
     method,
     url,
-    headers: { 'content-type': 'application/json' },
+    headers: { 
+      'content-type': 'application/json',
+      authorization: `Bearer ${TEST_TOKEN}`
+    },
     socket: { remoteAddress: '127.0.0.1' },
     body: body || {}
   } as any;

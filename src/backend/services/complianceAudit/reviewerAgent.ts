@@ -38,7 +38,7 @@ export class ReviewerAgent {
       section: c.section,
       title: c.title,
       summary: c.summary,
-      excerpt: this.sanitizeUntrustedInput((c.fullText || (c as any).text || c.summary || '').substring(0, 300))
+      excerpt: this.sanitizeUntrustedInput((c.fullText || c.summary || '').substring(0, 300))
     }));
 
     const sanitizedAuthorities = authorities.slice(0, 5).map(a => ({

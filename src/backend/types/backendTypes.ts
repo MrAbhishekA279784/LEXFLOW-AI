@@ -149,25 +149,44 @@ export type GraphRelationshipType =
 
 export interface GraphNode {
   id: string;
+  documentId?: string;
   type: GraphNodeType;
   label: string;
-  data: Record<string, any>;
+  description?: string;
+  data?: Record<string, any>;
   sourceClauseId?: string;
   sourcePage?: number;
+  evidenceId?: string;
+  position?: { x: number; y: number };
+  createdAt?: string;
 }
 
 export interface GraphEdge {
   id: string;
+  documentId?: string;
   source: string;
   target: string;
   relationship: GraphRelationshipType;
   label?: string;
   weight?: number;
+  metadata?: Record<string, any>;
+  sourceClauseId?: string;
+  evidenceId?: string;
+  createdAt?: string;
 }
 
 export interface LegalGraph {
+  documentId?: string;
+  versionId?: string;
   nodes: GraphNode[];
   edges: GraphEdge[];
+  metadata?: {
+    generatedAt: string;
+    nodeCount: number;
+    edgeCount: number;
+    isValid?: boolean;
+    errors?: string[];
+  };
 }
 
 export interface LegalAuthority {
@@ -182,6 +201,8 @@ export interface LegalAuthority {
   relevanceExplanation: string;
   retrievedAt: string;
   hierarchyLevel: number; // 1: Constitution, 2: Central Act, 3: State Act, 4: Rules, 5: Precedent
+  precedentCitation?: string;
+  court?: string;
 }
 
 export interface EvidenceItem {
@@ -272,6 +293,8 @@ export interface ScenarioSimulationResult {
   evidence: EvidenceItem[];
   suggestedNextSteps: string[];
   disclaimer: string;
+  targetNodeIds?: string[];
+  userId?: string;
   status: 'completed' | 'needs_clarification' | 'failed';
 }
 
@@ -300,22 +323,87 @@ export interface ConflictFinding {
   resolutionRecommendation: string;
 }
 
+export interface LawyerKitKeyFact {
+  label: string;
+  value: string;
+  clauseRef?: string;
+  page?: number;
+  evidenceId?: string;
+}
+
+export interface LawyerKitKeyClause {
+  clauseId: string;
+  section: string;
+  title: string;
+  excerpt: string;
+  page: number;
+  importance: string;
+  evidenceId?: string;
+}
+
+export interface LawyerKitProtection {
+  title: string;
+  description: string;
+  clauseRef?: string;
+  page?: number;
+  remedy?: string;
+  evidenceId?: string;
+}
+
+export interface LawyerKitTimelineItem {
+  dateOrRelative: string;
+  event: string;
+  source: string;
+  consequence?: string;
+}
+
+export interface LawyerKitScenarioFinding {
+  scenarioId?: string;
+  question: string;
+  normalizedScenario: string;
+  affectedClauses: string[];
+  affectedGraphNodes: string[];
+  consequences: string[];
+  financialImpact: string;
+  financialBreakdown: FinancialBreakdownItem[];
+  timeline: ScenarioResultTimelineStep[];
+  uncertainty?: string;
+}
+
 export interface LawyerKitData {
   id: string;
+  userId?: string;
   documentId: string;
+  documentVersionId?: string;
   documentName: string;
+  title?: string;
   generatedAt: string;
+  executiveSummary: string;
+  keyFacts: LawyerKitKeyFact[];
+  keyClauses: LawyerKitKeyClause[];
   parties: ExtractedParty[];
   keyObligations: ExtractedObligation[];
   importantDeadlines: ExtractedDeadline[];
   potentialRisks: RiskFinding[];
+  risks?: RiskFinding[];
   contractualProtections: string[];
+  protections?: LawyerKitProtection[];
+  potentialConflicts: ConflictFinding[];
+  conflicts?: ConflictFinding[];
   scenarioTested?: string;
   potentialFinancialExposure?: string;
-  potentialConflicts: ConflictFinding[];
+  scenarioFindings?: LawyerKitScenarioFinding;
+  timeline?: LawyerKitTimelineItem[];
   questionsForLegalProfessional: string[];
+  questionsForLawyer?: string[];
+  documentsToBring: string[];
+  assumptions: string[];
+  uncertainty?: string;
   evidenceSummary: EvidenceItem[];
+  evidence?: EvidenceItem[];
   authoritativeLegalSources: LegalAuthority[];
+  applicableLaw?: LegalAuthority[];
+  pdfStoragePath?: string;
   disclaimer: string;
 }
 

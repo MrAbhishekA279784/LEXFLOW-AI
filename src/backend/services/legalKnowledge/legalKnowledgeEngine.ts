@@ -181,7 +181,7 @@ export class LegalKnowledgeEngine {
         exactExcerpt: contractClauseSummary || 'Rent non-payment exceeding 30 days shall be treated as material contractual breach. Unilateral vacating allows deposit forfeiture.'
       },
       ...authorities.map(auth => ({
-        type: (auth.sourceType === 'judgment' ? 'judgment' : 'legal_authority') as any,
+        type: (auth.sourceType === 'judgment' ? 'judgment' : 'legal_authority') as 'legal_authority' | 'judgment',
         act: auth.actOrCourt,
         statuteSection: auth.sectionOrArticle,
         sourceUrl: auth.officialSourceUrl,

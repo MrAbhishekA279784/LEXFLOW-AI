@@ -15,11 +15,20 @@ export function errorHandler(
   const errorCode = isAppError ? err.errorCode : 'INTERNAL_SERVER_ERROR';
   const message = isAppError ? err.message : 'An unexpected error occurred. Please try again.';
 
-  logger.error(`API Error on ${req.method} ${req.path}`, err, {
-    requestId,
-    statusCode,
-    errorCode,
-  });
+  if (statusCode >= 500) {
+    logger.error(`API Error on ${req.method} ${req.path}`, err, {
+      requestId,
+      statusCode,
+      errorCode,
+    });
+  } else {
+    logger.warn(`API ${statusCode} on ${req.method} ${req.path}`, {
+      requestId,
+      statusCode,
+      errorCode,
+      message,
+    });
+  }
 
   res.status(statusCode).json({
     success: false,

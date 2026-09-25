@@ -1,39 +1,113 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
 import { 
   User, 
   Building2, 
   Calendar, 
   AlertTriangle, 
   FileText, 
-  Wrench, 
   ShieldCheck, 
   Maximize2,
   IndianRupee,
-  Shield,
-  FileCheck,
-  Download
+  Download,
+  RefreshCw,
+  Scale,
+  GitBranch,
+  ArrowRight
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { RENTAL_CLAUSES } from '../../data/initialData';
+import { GraphNode, GraphNodeType } from '../../backend/types/backendTypes';
 
 export const DesktopActionGraph: React.FC = () => {
-  const { navigateTo, openEvidence, setIsGraphExportModalOpen } = useApp();
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const { 
+    navigateTo, 
+    openEvidence, 
+    setIsGraphExportModalOpen,
+    currentGraph,
+    isGraphLoading,
+    activeDocument,
+    regenerateDocumentGraph
+  } = useApp();
 
-  const handleNodeClick = (clauseSection: string) => {
-    const clause = RENTAL_CLAUSES.find(c => c.section.includes(clauseSection)) || RENTAL_CLAUSES[0];
-    openEvidence(clause);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  const handleNodeClick = (node: GraphNode) => {
+    // If node has source clause, synthesize or open evidence
+    openEvidence({
+      id: node.sourceClauseId || node.id,
+      section: node.sourceClauseId || `Clause p.${node.sourcePage || 1}`,
+      title: node.label,
+      summary: node.description || `${node.type} extracted from ${activeDocument.name}`,
+      fullText: node.description || node.label,
+      riskLevel: node.type === 'Penalty' ? 'high' : (node.type === 'Obligation' ? 'medium' : 'low'),
+      party: (node.data?.actor?.toLowerCase() === 'landlord' || node.label.toLowerCase().includes('landlord')) 
+        ? 'landlord' 
+        : (node.data?.actor?.toLowerCase() === 'tenant' || node.label.toLowerCase().includes('tenant')) 
+          ? 'tenant' 
+          : 'mutual',
+      pageNumber: node.sourcePage || 1
+    });
   };
+
+  const getNodeIcon = (type: GraphNodeType) => {
+    switch (type) {
+      case 'Party':
+        return <User className="w-3.5 h-3.5 text-[#FF6B22]" />;
+      case 'Obligation':
+        return <FileText className="w-3.5 h-3.5 text-blue-600" />;
+      case 'Payment':
+        return <IndianRupee className="w-3.5 h-3.5 text-amber-600" />;
+      case 'Penalty':
+        return <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />;
+      case 'Condition':
+        return <GitBranch className="w-3.5 h-3.5 text-purple-600" />;
+      case 'Deadline':
+        return <Calendar className="w-3.5 h-3.5 text-indigo-600" />;
+      case 'Statute':
+      case 'Judgment':
+        return <Scale className="w-3.5 h-3.5 text-emerald-600" />;
+      default:
+        return <ShieldCheck className="w-3.5 h-3.5 text-stone-600" />;
+    }
+  };
+
+  const getNodeBadgeClass = (type: GraphNodeType) => {
+    switch (type) {
+      case 'Party':
+        return 'bg-amber-50 text-[#FF6B22] border-amber-200';
+      case 'Obligation':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Payment':
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'Penalty':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'Condition':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'Deadline':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'Statute':
+      case 'Judgment':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      default:
+        return 'bg-stone-50 text-stone-700 border-stone-200';
+    }
+  };
+
+  const nodes = currentGraph?.nodes || [];
+  const edges = currentGraph?.edges || [];
 
   return (
     <div className="glass-card p-5 rounded-3xl border border-white/80 shadow-md shadow-[#46321e]/5 flex flex-col justify-between relative overflow-hidden h-full min-h-[380px]">
       {/* Header */}
       <div className="flex items-start justify-between pb-2 border-b border-stone-100/80">
         <div>
-          <h3 className="text-sm font-bold text-[#151515]">Legal Action Graph</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-[#151515]">Legal Action Graph</h3>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF6B22]/10 text-[#FF6B22] border border-[#FF6B22]/20">
+              {nodes.length} Nodes · {edges.length} Edges
+            </span>
+          </div>
           <p className="text-[11px] text-[#6F6A64]">
-            Visualize obligations, rights and consequences.
+            Traceable legal obligations, conditions, and Indian statutory grounding.
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -47,6 +121,15 @@ export const DesktopActionGraph: React.FC = () => {
             <span>Export</span>
           </button>
           <button
+            onClick={() => regenerateDocumentGraph()}
+            disabled={isGraphLoading}
+            aria-label="Regenerate graph"
+            title="Refresh action graph"
+            className="w-7 h-7 rounded-xl hover:bg-white flex items-center justify-center text-stone-500 hover:text-[#FF6B22] transition-colors cursor-pointer border border-transparent hover:border-stone-200 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isGraphLoading ? 'animate-spin text-[#FF6B22]' : ''}`} />
+          </button>
+          <button
             onClick={() => navigateTo('legal-graph')}
             aria-label="Expand graph to full screen"
             title="Open interactive action graph workspace"
@@ -57,179 +140,86 @@ export const DesktopActionGraph: React.FC = () => {
         </div>
       </div>
 
-      {/* Visual Action Graph Canvas with 3D perspective and glass styling */}
-      <div 
-        style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
-        className="relative flex-1 flex flex-col items-center justify-center py-3 select-none"
-      >
-        {/* SVG Connectors Layer with Animated Flow Energy */}
-        <svg 
-          className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible"
-          viewBox="0 0 380 260"
-          preserveAspectRatio="xMidYMid meet"
+      {/* Main Mini Graph Canvas */}
+      <div className="relative flex-1 flex flex-col justify-center py-2 select-none overflow-hidden">
+        {isGraphLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
+            <RefreshCw className="w-6 h-6 animate-spin text-[#FF6B22]" />
+            <p className="text-xs font-semibold text-stone-600">Synthesizing Legal Action Graph...</p>
+          </div>
+        ) : nodes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+            <GitBranch className="w-8 h-8 text-stone-300" />
+            <p className="text-xs text-stone-500 max-w-xs">
+              No graph relationships computed yet for this document.
+            </p>
+            <button
+              onClick={() => regenerateDocumentGraph()}
+              className="px-3 py-1.5 rounded-xl bg-[#FF6B22] text-white text-xs font-bold shadow-xs hover:bg-[#E55A16] cursor-pointer"
+            >
+              Generate Graph
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2 overflow-y-auto max-h-[260px] pr-1 py-1">
+            {nodes.slice(0, 6).map((node) => {
+              const outgoing = edges.filter(e => e.source === node.id);
+              return (
+                <div
+                  key={node.id}
+                  onClick={() => handleNodeClick(node)}
+                  onMouseEnter={() => setHoveredNodeId(node.id)}
+                  onMouseLeave={() => setHoveredNodeId(null)}
+                  className={`p-2.5 rounded-2xl bg-white/80 hover:bg-white border transition-all cursor-pointer flex items-center justify-between group shadow-2xs hover:shadow-sm ${
+                    hoveredNodeId === node.id ? 'border-[#FF6B22] shadow-sm' : 'border-stone-200/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-center shrink-0">
+                      {getNodeIcon(node.type)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-1.5 py-0.2 rounded-md text-[9px] font-extrabold border uppercase ${getNodeBadgeClass(node.type)}`}>
+                          {node.type}
+                        </span>
+                        <h4 className="text-xs font-bold text-[#151515] truncate max-w-[180px]">
+                          {node.label}
+                        </h4>
+                      </div>
+                      <p className="text-[10px] text-stone-500 truncate max-w-[220px]">
+                        {node.description || 'Verified contractual node'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0 text-stone-400 group-hover:text-[#FF6B22] transition-colors">
+                    {outgoing.length > 0 && (
+                      <span className="text-[10px] font-bold text-stone-500 hidden sm:inline mr-1">
+                        → {outgoing[0].relationship}
+                      </span>
+                    )}
+                    <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer Info & Quick Link */}
+      <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px] text-[#6F6A64]">
+        <span className="truncate max-w-[200px]">
+          Source: <strong className="text-[#151515]">{activeDocument?.name}</strong>
+        </span>
+        <button
+          onClick={() => navigateTo('legal-graph')}
+          className="text-[#FF6B22] hover:text-[#E55A16] font-bold cursor-pointer hover:underline flex items-center gap-1"
         >
-          <defs>
-            <linearGradient id="flowOrange" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FF6B22" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#FFA868" stopOpacity="0.3" />
-            </linearGradient>
-            <linearGradient id="flowBlue" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#93C5FD" stopOpacity="0.3" />
-            </linearGradient>
-            <filter id="glowSubtle" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="1.5" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-
-          {/* Base Structural Connectors */}
-          <path d="M 190 32 L 190 52 L 110 52 L 110 70" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 190 32 L 190 52 L 270 52 L 270 70" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 110 98 L 110 118" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 270 98 L 270 118" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 110 148 L 110 162 L 72 162 L 72 176" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 110 148 L 110 162 L 148 162 L 148 176" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 110 206 L 110 220 L 80 220 L 80 228" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-          <path d="M 270 148 L 270 220 L 270 228" stroke="#DDD6CE" strokeWidth="2" fill="none" />
-
-          {/* Animated Flow Beams Over Connectors */}
-          <path d="M 190 32 L 190 52 L 110 52 L 110 70" stroke="url(#flowOrange)" strokeWidth="1.8" fill="none" className="connector-flow" filter="url(#glowSubtle)" />
-          <path d="M 190 32 L 190 52 L 270 52 L 270 70" stroke="#10B981" strokeWidth="1.5" strokeOpacity="0.75" fill="none" className="connector-flow" />
-          <path d="M 110 98 L 110 118" stroke="url(#flowOrange)" strokeWidth="1.8" fill="none" className="connector-flow" />
-          <path d="M 270 98 L 270 118" stroke="#10B981" strokeWidth="1.5" strokeOpacity="0.75" fill="none" className="connector-flow" />
-          <path d="M 110 148 L 110 162 L 72 162 L 72 176" stroke="url(#flowBlue)" strokeWidth="1.6" fill="none" className="connector-flow" />
-          <path d="M 110 148 L 110 162 L 148 162 L 148 176" stroke="#F59E0B" strokeWidth="1.6" fill="none" className="connector-flow" />
-        </svg>
-
-        {/* 1. ROOT NODE: Rental Agreement with 3D Elevation */}
-        <motion.div
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleNodeClick('4.1')}
-          onMouseEnter={() => setHoveredNode('root')}
-          onMouseLeave={() => setHoveredNode(null)}
-          className="relative z-10 node-3d px-5 py-2 rounded-2xl bg-gradient-to-br from-[#FFF3EB] to-[#FFE5D3] border border-[#FF6B22]/35 text-[#151515] font-extrabold text-xs shadow-md shadow-[#FF6B22]/10 cursor-pointer flex items-center gap-2 transition-all"
-        >
-          <div className="w-2 h-2 rounded-full bg-[#FF6B22] animate-ping opacity-75" />
-          <span className="tracking-tight">Rental Agreement</span>
-        </motion.div>
-
-        {/* 2. PARTIES ROW: Tenant & Landlord with 3D Depth */}
-        <div className="relative z-10 w-full flex justify-around mt-5 px-6">
-          {/* Tenant */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('4.1')}
-            className="node-3d px-4 py-2 rounded-xl bg-white/85 backdrop-blur-md border border-white/95 shadow-xs flex items-center gap-2 cursor-pointer hover:border-[#FF6B22]/50 hover:bg-white transition-all"
-          >
-            <div className="w-5 h-5 rounded-full bg-[#151515] text-white flex items-center justify-center text-[10px] shadow-2xs">
-              <User className="w-3 h-3" />
-            </div>
-            <span className="text-xs font-bold text-[#151515]">Tenant</span>
-          </motion.div>
-
-          {/* Landlord */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('9.1')}
-            className="node-3d px-4 py-2 rounded-xl bg-white/85 backdrop-blur-md border border-white/95 shadow-xs flex items-center gap-2 cursor-pointer hover:border-emerald-500/50 hover:bg-white transition-all"
-          >
-            <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shadow-2xs">
-              <ShieldCheck className="w-3 h-3" />
-            </div>
-            <span className="text-xs font-bold text-[#151515]">Landlord</span>
-          </motion.div>
-        </div>
-
-        {/* 3. PRIMARY OBLIGATIONS ROW with 3D Badges */}
-        <div className="relative z-10 w-full flex justify-around mt-4 px-4">
-          {/* Pay ₹25,000/month */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('4.1')}
-            className="node-3d px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#FFF9F4] to-white/90 backdrop-blur-md border border-[#FF6B22]/30 shadow-xs flex items-center gap-1.5 cursor-pointer text-xs font-bold text-[#151515]"
-          >
-            <span className="text-[#FF6B22] font-extrabold">₹</span>
-            <span>Pay ₹25,000/month</span>
-          </motion.div>
-
-          {/* Maintain premises */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('9.1')}
-            className="node-3d px-3.5 py-2 rounded-xl bg-white/85 backdrop-blur-md border border-white/95 shadow-xs flex items-center gap-1.5 cursor-pointer text-xs font-bold text-[#151515] hover:border-stone-300"
-          >
-            <Wrench className="w-3.5 h-3.5 text-stone-600" />
-            <span>Maintain premises</span>
-          </motion.div>
-        </div>
-
-        {/* 4. SUB OBLIGATIONS / CONDITIONS with 3D Depth */}
-        <div className="relative z-10 w-full flex justify-between gap-2 mt-4 px-2">
-          {/* Due: 5th */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('4.1')}
-            className="node-3d p-2 px-3 rounded-xl bg-blue-50/85 backdrop-blur-md border border-blue-200/70 shadow-2xs flex items-center gap-2 cursor-pointer text-[10px] text-left hover:bg-blue-50"
-          >
-            <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <div>
-              <span className="text-stone-500 font-medium">Due: </span>
-              <span className="font-bold text-[#151515]">5th of every month</span>
-            </div>
-          </motion.div>
-
-          {/* If missed: Late penalty */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('4.3')}
-            className="node-3d p-2 px-3 rounded-xl bg-amber-50/85 backdrop-blur-md border border-amber-200/70 shadow-2xs flex items-center gap-2 cursor-pointer text-[10px] text-left hover:bg-amber-50"
-          >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <div>
-              <span className="text-stone-500 font-medium">If missed</span>
-              <p className="font-bold text-[#151515]">Late penalty</p>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* 5. BOTTOM ROW: Security Deposit & Termination */}
-        <div className="relative z-10 w-full flex justify-around mt-4 px-4">
-          {/* Security Deposit */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('5.1')}
-            className="node-3d px-3.5 py-2 rounded-xl bg-white/85 backdrop-blur-md border border-stone-200/90 shadow-2xs flex items-center gap-2 cursor-pointer text-[11px] text-left hover:border-[#FF6B22]/40"
-          >
-            <Shield className="w-3.5 h-3.5 text-[#FF6B22] shrink-0" />
-            <div>
-              <span className="text-stone-500 text-[9px] block uppercase font-bold">Security Deposit</span>
-              <span className="font-bold text-[#151515]">₹75,000</span>
-            </div>
-          </motion.div>
-
-          {/* Termination Notice Period */}
-          <motion.div
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleNodeClick('12.1')}
-            className="node-3d px-3.5 py-2 rounded-xl bg-white/85 backdrop-blur-md border border-stone-200/90 shadow-2xs flex items-center gap-2 cursor-pointer text-[11px] text-left hover:border-blue-300"
-          >
-            <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <div>
-              <span className="text-stone-500 text-[9px] block uppercase font-bold">Termination</span>
-              <span className="font-bold text-[#151515]">Notice period</span>
-            </div>
-          </motion.div>
-        </div>
+          <span>Open Full Interactive Graph</span>
+          <ArrowRight className="w-3 h-3" />
+        </button>
       </div>
     </div>
   );

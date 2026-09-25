@@ -254,6 +254,37 @@ export class DeterministicCalculator {
   }
 
   /**
+   * Decimal-safe paise to Indian Rupees formatting helper
+   */
+  static formatPaiseToRupees(paise: number): string {
+    return this.formatINR(paise);
+  }
+
+  /**
+   * Per-day penalty calculator with minor-unit accuracy
+   */
+  static calculatePerDayPenalty(dailyRatePaise: number, daysDelayed: number, baseAmountMinor?: number): { totalPenaltyMinor: number; formatted: string; formula: string } {
+    const totalPenaltyMinor = dailyRatePaise * daysDelayed;
+    return {
+      totalPenaltyMinor,
+      formatted: this.formatINR(totalPenaltyMinor),
+      formula: `₹${(dailyRatePaise / 100).toFixed(2)} × ${daysDelayed} days`,
+    };
+  }
+
+  /**
+   * Percentage late fee calculator
+   */
+  static calculateLateFee(baseAmountMinor: number, percentageBasisPoints: number, daysDelayed?: number): { feeAmountMinor: number; formattedFee: string; formula: string } {
+    const feeAmountMinor = Math.round((baseAmountMinor * percentageBasisPoints) / 10000);
+    return {
+      feeAmountMinor,
+      formattedFee: this.formatINR(feeAmountMinor),
+      formula: `${(percentageBasisPoints / 100)}% of ${this.formatINR(baseAmountMinor)}`,
+    };
+  }
+
+  /**
    * Computes statutory interest under Indian Interest Act / judicial standards (e.g. 6% to 9% p.a.)
    */
   static calculateStatutoryInterest(principalMinor: number, days: number, annualRatePercentage = 6): number {

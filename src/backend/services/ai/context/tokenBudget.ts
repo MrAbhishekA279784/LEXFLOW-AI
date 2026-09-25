@@ -58,6 +58,38 @@ export const AI_CONFIG = {
     maxOutputTokens: 1500,
     temperature: 0.2,
     maxContextTokens: 3000,
+  },
+  AGENTS: {
+    opposingCounsel: {
+      model: env.AI_MODEL || 'gemini-3.8-flash',
+      maxOutputTokens: 1400,
+      temperature: 0.15,
+      maxContextTokens: 3500,
+    },
+    defense: {
+      model: env.AI_MODEL || 'gemini-3.8-flash',
+      maxOutputTokens: 1400,
+      temperature: 0.15,
+      maxContextTokens: 3500,
+    },
+    complianceReviewer: {
+      model: env.AI_MODEL || 'gemini-3.8-flash',
+      maxOutputTokens: 1600,
+      temperature: 0.1,
+      maxContextTokens: 3500,
+    },
+    skeptic: {
+      model: env.AI_MODEL || 'gemini-3.8-flash',
+      maxOutputTokens: 1400,
+      temperature: 0.1,
+      maxContextTokens: 2500,
+    },
+    synthesis: {
+      model: env.AI_MODEL || 'gemini-3.8-flash',
+      maxOutputTokens: 1500,
+      temperature: 0.2,
+      maxContextTokens: 3000,
+    },
   }
 };
 

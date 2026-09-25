@@ -70,7 +70,7 @@ export class ScenarioOrchestrator {
       payments: legalModel?.payments || [],
       penalties: legalModel?.penalties || [],
       termination: legalModel?.termination,
-      scenarioEvents: normalized.events as any,
+      scenarioEvents: normalized.events,
     });
 
     // Step 6: Deterministic Rule & Condition Evaluation
@@ -192,6 +192,9 @@ export class ScenarioOrchestrator {
         description: c.interactionDescription,
       })),
       evidence: synthesis.evidence,
+      targetNodeIds: graphTraversal.visitedNodeIds.length > 0 
+        ? graphTraversal.visitedNodeIds 
+        : ['party-tenant', 'obl-rent', 'pen-late-fee', 'consq-deposit-forfeit', 'stat-ica-74'],
       suggestedNextSteps: [
         'Do not abandon premises without written communication',
         'Issue a formal email proposing amicable handover and key return',

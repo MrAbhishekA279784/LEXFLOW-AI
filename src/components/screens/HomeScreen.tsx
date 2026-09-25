@@ -8,16 +8,11 @@ import {
   Scale, 
   Lightbulb, 
   ChevronRight,
-  Shield,
-  FileCheck2,
-  FileCode,
-  Sparkles,
-  HelpCircle
+  ShieldCheck
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { AppHeader } from '../common/AppHeader';
-import { GlassCard } from '../common/GlassCard';
 import { DocumentItem } from '../../types';
 
 export const HomeScreen: React.FC = () => {
@@ -92,79 +87,101 @@ export const HomeScreen: React.FC = () => {
           </button>
         </motion.form>
 
-        {/* 4 Feature Glass Cards (2x2 Grid) */}
+        {/* 5 Feature Action Cards Grid */}
         <motion.div 
           initial={{ y: 15, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 gap-3.5"
+          className="space-y-3"
         >
-          {/* 1. Upload Document */}
-          <button
-            onClick={() => {
-              triggerHaptic('light');
-              navigateTo('upload');
-            }}
-            className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-30 cursor-pointer border border-white/80"
-          >
-            <div className="w-9 h-9 rounded-xl bg-[#FFF1E8] border border-[#FF6B22]/20 flex items-center justify-center text-[#FF6B22]">
-              <Upload className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#151515]">Upload Document</h3>
-              <p className="text-[11px] text-[#6F6A64]">Analyze with AI</p>
-            </div>
-          </button>
+          <div className="grid grid-cols-2 gap-3">
+            {/* 1. Upload Document */}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                navigateTo('upload');
+              }}
+              className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer border border-white/80 transition-all hover:scale-[1.02]"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#FFF1E8] border border-[#FF6B22]/20 flex items-center justify-center text-[#FF6B22]">
+                <Upload className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Upload Document</h3>
+                <p className="text-[10px] text-[#6F6A64]">Analyze with AI</p>
+              </div>
+            </button>
 
-          {/* 2. Compare */}
-          <button
-            onClick={() => {
-              triggerHaptic('light');
-              navigateTo('compare');
-            }}
-            className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-30 cursor-pointer border border-white/80"
-          >
-            <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] border border-blue-500/20 flex items-center justify-center text-blue-600">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#151515]">Compare</h3>
-              <p className="text-[11px] text-[#6F6A64]">Two documents</p>
-            </div>
-          </button>
+            {/* 2. Compare Documents */}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                navigateTo('compare');
+              }}
+              className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer border border-white/80 transition-all hover:scale-[1.02]"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] border border-blue-500/20 flex items-center justify-center text-blue-600">
+                <Layers className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Compare</h3>
+                <p className="text-[10px] text-[#6F6A64]">Two documents</p>
+              </div>
+            </button>
 
-          {/* 3. Try a Scenario */}
-          <button
-            onClick={() => {
-              triggerHaptic('light');
-              navigateTo('scenario-input');
-            }}
-            className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-30 cursor-pointer border border-white/80"
-          >
-            <div className="w-9 h-9 rounded-xl bg-[#F0FDF4] border border-emerald-500/20 flex items-center justify-center text-emerald-700">
-              <Scale className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#151515]">Try a Scenario</h3>
-              <p className="text-[11px] text-[#6F6A64]">What could happen?</p>
-            </div>
-          </button>
+            {/* 3. Try a Scenario */}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                navigateTo('scenario-input');
+              }}
+              className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer border border-white/80 transition-all hover:scale-[1.02]"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#F0FDF4] border border-emerald-500/20 flex items-center justify-center text-emerald-700">
+                <Scale className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Try a Scenario</h3>
+                <p className="text-[10px] text-[#6F6A64]">What could happen?</p>
+              </div>
+            </button>
 
-          {/* 4. Tips & Guides */}
+            {/* 4. Compliance Audit (Core Feature Prominence) */}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                navigateTo('compliance-audit');
+              }}
+              className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer border border-[#FF6B22]/30 bg-gradient-to-br from-white/90 to-orange-50/50 transition-all hover:scale-[1.02] shadow-xs"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#FF6B22]/10 border border-[#FF6B22]/30 flex items-center justify-center text-[#FF6B22]">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Compliance Audit</h3>
+                <p className="text-[10px] text-[#6F6A64]">Dual-agent audit</p>
+              </div>
+            </button>
+          </div>
+
+          {/* 5. Tips & Guides (Full width card) */}
           <button
             onClick={() => {
               triggerHaptic('light');
               setShowTipsModal(true);
             }}
-            className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-30 cursor-pointer border border-white/80"
+            className="w-full text-left glass-card glass-card-hover p-3 rounded-2xl flex items-center justify-between cursor-pointer border border-white/80 transition-all"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#FFFBEB] border border-amber-500/20 flex items-center justify-center text-amber-600">
-              <Lightbulb className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-[#FFFBEB] border border-amber-500/20 flex items-center justify-center text-amber-600 shrink-0">
+                <Lightbulb className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-[#151515]">Tips & Legal Guides</h3>
+                <p className="text-[10px] text-[#6F6A64]">Tenant rights & negotiation checklists</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-[#151515]">Tips & Guides</h3>
-              <p className="text-[11px] text-[#6F6A64]">Know your rights</p>
-            </div>
+            <ChevronRight className="w-4 h-4 text-stone-400" />
           </button>
         </motion.div>
 

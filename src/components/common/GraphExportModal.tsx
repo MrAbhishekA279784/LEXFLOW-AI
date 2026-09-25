@@ -27,7 +27,8 @@ export const GraphExportModal: React.FC = () => {
   const { 
     isGraphExportModalOpen, 
     setIsGraphExportModalOpen, 
-    activeDocument 
+    activeDocument,
+    currentGraph
   } = useApp();
 
   const [format, setFormat] = useState<'svg' | 'png'>('png');
@@ -42,15 +43,17 @@ export const GraphExportModal: React.FC = () => {
   const [exportSuccessToast, setExportSuccessToast] = useState<string | null>(null);
 
   const exportOptions: GraphExportOptions = useMemo(() => ({
-    documentName: activeDocument?.name || 'Rental Agreement.pdf',
+    documentName: activeDocument?.name || 'Legal Document.pdf',
     documentDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
     theme,
     includeHeader,
     includeLegend,
     includeClauseCitations,
-    documentId: 'LX-2025-8842-SYN',
-    scale
-  }), [activeDocument, theme, includeHeader, includeLegend, includeClauseCitations, scale]);
+    documentId: activeDocument?.id || currentGraph?.documentId || 'LX-LEGAL-GRAPH',
+    scale,
+    nodes: currentGraph?.nodes || [],
+    edges: currentGraph?.edges || []
+  }), [activeDocument, currentGraph, theme, includeHeader, includeLegend, includeClauseCitations, scale]);
 
   // Live SVG code string for the preview
   const liveSvgString = useMemo(() => {

@@ -53,7 +53,7 @@ You MUST return structured JSON adhering to the SkepticAgentOutputSchema with an
 ${JSON.stringify(findings, null, 2)}
 
 FULL CONTRACT CLAUSES FOR COUNTER-EXAMINATION:
-${JSON.stringify(clauses.slice(0, 15).map(c => ({ id: c.id, section: c.section, title: c.title, text: c.fullText || (c as any).text || c.summary || '' })), null, 2)}
+${JSON.stringify(clauses.slice(0, 15).map(c => ({ id: c.id, section: c.section, title: c.title, text: c.fullText || c.summary || '' })), null, 2)}
 
 LEGAL AUTHORITIES CITED:
 ${JSON.stringify(authorities.slice(0, 5).map(a => ({ title: a.title, section: a.sectionOrArticle, summary: a.summary })), null, 2)}

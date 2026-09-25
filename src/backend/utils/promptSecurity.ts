@@ -27,6 +27,13 @@ export class PromptSecurity {
   }
 
   /**
+   * Sanitizes untrusted document text (alias for sanitizeUntrustedText)
+   */
+  static sanitizeUntrustedDocument(input: string): string {
+    return this.sanitizeUntrustedText(input);
+  }
+
+  /**
    * Encapsulates untrusted document text in strict XML isolation boundaries
    */
   static wrapUntrustedDocument(content: string, docId?: string): string {

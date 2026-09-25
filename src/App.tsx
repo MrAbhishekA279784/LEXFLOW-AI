@@ -1,32 +1,40 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { BackgroundAura } from './components/common/BackgroundAura';
 import { EvidenceModal } from './components/common/EvidenceModal';
 import { PdfPreviewModal } from './components/common/PdfPreviewModal';
 import { GraphExportModal } from './components/common/GraphExportModal';
 import { PageTransition } from './components/common/PageTransition';
-import { DesktopShell } from './components/desktop/DesktopShell';
 import { BottomNav } from './components/common/BottomNav';
 import { useHapticFeedback } from './hooks/useHapticFeedback';
 
-// Mobile Screen Views
+// Lightweight core screens imported synchronously
 import { WelcomeScreen } from './components/screens/WelcomeScreen';
 import { AuthScreen } from './components/screens/AuthScreen';
 import { HomeScreen } from './components/screens/HomeScreen';
 import { UploadScreen } from './components/screens/UploadScreen';
 import { AnalyzingScreen } from './components/screens/AnalyzingScreen';
-import { LegalGraphScreen } from './components/screens/LegalGraphScreen';
-import { ScenarioInputScreen } from './components/screens/ScenarioInputScreen';
-import { ScenarioResultScreen } from './components/screens/ScenarioResultScreen';
-import { LawyerKitScreen } from './components/screens/LawyerKitScreen';
-import { CompareScreen } from './components/screens/CompareScreen';
-import { AssistantScreen } from './components/screens/AssistantScreen';
 import { MoreMenuScreen } from './components/screens/MoreMenuScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
 import { HelpScreen } from './components/screens/HelpScreen';
 import { TermsScreen } from './components/screens/TermsScreen';
-import { DocumentHistoryScreen } from './components/screens/DocumentHistoryScreen';
-import { ComplianceAuditScreen } from './components/screens/ComplianceAuditScreen';
+
+// Heavy feature screens and desktop shell lazy-loaded on demand
+const DesktopShell = lazy(() => import('./components/desktop/DesktopShell').then(m => ({ default: m.DesktopShell })));
+const LegalGraphScreen = lazy(() => import('./components/screens/LegalGraphScreen').then(m => ({ default: m.LegalGraphScreen })));
+const ComplianceAuditScreen = lazy(() => import('./components/screens/ComplianceAuditScreen').then(m => ({ default: m.ComplianceAuditScreen })));
+const LawyerKitScreen = lazy(() => import('./components/screens/LawyerKitScreen').then(m => ({ default: m.LawyerKitScreen })));
+const CompareScreen = lazy(() => import('./components/screens/CompareScreen').then(m => ({ default: m.CompareScreen })));
+const ScenarioInputScreen = lazy(() => import('./components/screens/ScenarioInputScreen').then(m => ({ default: m.ScenarioInputScreen })));
+const ScenarioResultScreen = lazy(() => import('./components/screens/ScenarioResultScreen').then(m => ({ default: m.ScenarioResultScreen })));
+const AssistantScreen = lazy(() => import('./components/screens/AssistantScreen').then(m => ({ default: m.AssistantScreen })));
+const DocumentHistoryScreen = lazy(() => import('./components/screens/DocumentHistoryScreen').then(m => ({ default: m.DocumentHistoryScreen })));
+
+const SuspenseFallback: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[300px] w-full p-6 text-center text-stone-500 font-serif italic">
+    Loading feature module...
+  </div>
+);
 
 const MainRouter: React.FC = () => {
   const { currentScreen } = useApp();
@@ -84,7 +92,9 @@ const MainRouter: React.FC = () => {
       {/* 1. Mobile & Small Screen Product View (<1024px) */}
       <div className="lg:hidden w-full max-w-md mx-auto min-h-screen flex flex-col">
         <PageTransition pageKey={currentScreen}>
-          {renderActiveScreen()}
+          <Suspense fallback={<SuspenseFallback />}>
+            {renderActiveScreen()}
+          </Suspense>
         </PageTransition>
 
         {/* Viewport-fixed Mobile Bottom Navigation */}
@@ -93,7 +103,9 @@ const MainRouter: React.FC = () => {
 
       {/* 2. Desktop Product View (>=1024px) */}
       <div className="hidden lg:block w-full min-h-screen">
-        <DesktopShell />
+        <Suspense fallback={<SuspenseFallback />}>
+          <DesktopShell />
+        </Suspense>
       </div>
 
       {/* Traceable Evidence Modal */}

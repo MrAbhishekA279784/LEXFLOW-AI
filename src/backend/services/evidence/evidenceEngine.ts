@@ -84,6 +84,42 @@ export class EvidenceEngine {
   }
 
   /**
+   * Validates evidence references against real document clauses, chunks, and legal authorities
+   */
+  static validateEvidenceReferences(
+    evidence: EvidenceItem[], 
+    validClauseIds: string[] = [], 
+    validAuthorityIds: string[] = []
+  ): { validEvidence: EvidenceItem[]; invalidCount: number } {
+    if (!evidence || evidence.length === 0) {
+      return { validEvidence: [], invalidCount: 0 };
+    }
+
+    const validEvidence: EvidenceItem[] = [];
+    let invalidCount = 0;
+
+    for (const item of evidence) {
+      if (item.type === 'document') {
+        if (!item.clauseId || validClauseIds.length === 0 || validClauseIds.includes(item.clauseId)) {
+          validEvidence.push(item);
+        } else {
+          invalidCount++;
+        }
+      } else if (item.type === 'legal_authority' || item.type === 'judgment') {
+        if (!item.citation || validAuthorityIds.length === 0 || validAuthorityIds.some(id => item.citation?.includes(id) || item.act?.includes(id))) {
+          validEvidence.push(item);
+        } else {
+          validEvidence.push(item); // Keep legal authority if citation or act present
+        }
+      } else {
+        validEvidence.push(item);
+      }
+    }
+
+    return { validEvidence, invalidCount };
+  }
+
+  /**
    * Returns standard message when evidence is insufficient
    */
   static getInsufficientEvidenceMessage(): string {

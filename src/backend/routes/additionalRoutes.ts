@@ -25,3 +25,5 @@ legalRoutes.post('/retrieve', expensiveRateLimiter, validateBody(RetrieveLawBody
 // Lawyer Kit Direct Routes
 export const lawyerKitRoutes = Router();
 lawyerKitRoutes.get('/:id', standardRateLimiter, LawyerKitController.getKitById);
+lawyerKitRoutes.get('/:id/export', standardRateLimiter, LawyerKitController.exportPdf);
+lawyerKitRoutes.delete('/:id', standardRateLimiter, LawyerKitController.deleteKit);

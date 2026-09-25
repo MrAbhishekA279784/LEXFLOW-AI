@@ -13,7 +13,7 @@ export const CONSTANTS = {
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/msword'
   ],
-  ALLOWED_EXTENSIONS: ['.pdf', '.docx', '.doc'],
+  ALLOWED_EXTENSIONS: ['.pdf', '.docx', '.doc', '.txt'],
   
   // Rate Limiting
   RATE_LIMIT_STANDARD_MAX: 120, // 120 reqs / 15 mins for cheap

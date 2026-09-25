@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import express from 'express';
 import { apiV1Router } from '../routes';
 import { errorHandler } from '../middleware/errorHandler';
+import { signJwtToken } from '../utils/jwt';
+
+const TEST_TOKEN = signJwtToken({ id: 'test-user-001', email: 'test@example.com' });
+const AUTH_HEADER = { authorization: `Bearer ${TEST_TOKEN}` };
 
 function createTestApp() {
   const app = express();
@@ -18,7 +22,7 @@ describe('API Integration Endpoints (/api/v1)', () => {
     const req = { 
       method: 'GET', 
       url: '/api/v1/documents', 
-      headers: {},
+      headers: { ...AUTH_HEADER },
       socket: { remoteAddress: '127.0.0.1' }
     } as any;
 
@@ -54,7 +58,7 @@ describe('API Integration Endpoints (/api/v1)', () => {
     const req = {
       method: 'POST',
       url: '/api/v1/documents/doc-rental/scenarios',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...AUTH_HEADER },
       socket: { remoteAddress: '127.0.0.1' },
       body: {
         prompt: 'Agar main 3 mahine rent nahi du aur phir ghar chhod du toh kya hoga?',
@@ -97,7 +101,7 @@ describe('API Integration Endpoints (/api/v1)', () => {
     const req = {
       method: 'POST',
       url: '/api/v1/documents/doc-rental/lawyer-kit',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...AUTH_HEADER },
       socket: { remoteAddress: '127.0.0.1' },
       body: {}
     } as any;

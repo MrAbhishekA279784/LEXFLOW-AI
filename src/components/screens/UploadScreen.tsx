@@ -33,7 +33,8 @@ export const UploadScreen: React.FC = () => {
       addDocument({
         name: f.name,
         size: sizeStr,
-        type
+        type,
+        rawFile: f
       });
     }
   };
@@ -49,7 +50,8 @@ export const UploadScreen: React.FC = () => {
       addDocument({
         name: f.name,
         size: sizeStr,
-        type
+        type,
+        rawFile: f
       });
     }
   };

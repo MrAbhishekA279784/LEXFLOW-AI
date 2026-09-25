@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { repository } from '../../repositories';
 import { LegalKnowledgeEngine } from '../legalKnowledge/legalKnowledgeEngine';
 import { GraphEngine } from '../graph/graphEngine';
+import { MasterAIOrchestrator } from '../ai/orchestrator';
 import { ReviewerAgent } from './reviewerAgent';
 import { SkepticAgent } from './skepticAgent';
 import { DebateEngine } from './debateEngine';
@@ -88,11 +89,19 @@ export class ComplianceAuditService {
     const { id: auditId, documentId, documentName, userId } = record;
 
     try {
-      // STEP 1: Gather Grounded Context (Model, Clauses, Law, Graph)
+      // STEP 1: Gather Grounded Context & Run Canonical 4-Agent Master AI Orchestrator
       await repository.updateComplianceAudit(auditId, {
         status: 'processing',
-        currentStep: 'Retrieving extracted clauses, legal model, and applicable Indian statutes...',
-        progressPercentage: 20
+        currentStep: 'Initializing 4-Agent Master AI Orchestrator (Opposing Counsel, Defense, Reviewer, Skeptic)...',
+        progressPercentage: 15
+      });
+
+      // Execute canonical 4-agent MasterAIOrchestrator (Opposing Counsel, Defense, Reviewer, Skeptic, and Debates)
+      const masterResult = await MasterAIOrchestrator.runLexflowAiAnalysis({
+        userId,
+        documentId,
+        mode: 'FULL_AUDIT',
+        forceRefresh: true
       });
 
       const [clauses, legalModel, authoritativeSources] = await Promise.all([

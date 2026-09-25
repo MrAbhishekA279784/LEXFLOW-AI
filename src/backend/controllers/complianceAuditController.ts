@@ -11,7 +11,7 @@ export class ComplianceAuditController {
   static async startAudit(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id: documentId } = req.params;
-      const userId = (req as any).user?.id || (req.headers['x-user-id'] as string) || 'user-ahamed-001';
+      const userId = req.user!.id;
 
       if (!documentId) {
         res.status(400).json({ error: 'Document ID is required' });
@@ -21,6 +21,7 @@ export class ComplianceAuditController {
       // Check document existence & ownership
       const doc = await repository.findById(documentId, userId);
       if (!doc) {
+        logger.warn('Compliance audit start denied: Document not found or tenant access denied', { documentId, userId });
         res.status(404).json({ error: 'Document not found or access denied' });
         return;
       }
@@ -44,10 +45,17 @@ export class ComplianceAuditController {
   static async getAudit(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id: documentId, auditId } = req.params;
-      const userId = (req as any).user?.id || (req.headers['x-user-id'] as string) || 'user-ahamed-001';
+      const userId = req.user!.id;
 
       if (!documentId || !auditId) {
         res.status(400).json({ error: 'Document ID and Audit ID are required' });
+        return;
+      }
+
+      const doc = await repository.findById(documentId, userId);
+      if (!doc) {
+        logger.warn('Compliance audit get denied: Document not found or tenant access denied', { documentId, auditId, userId });
+        res.status(404).json({ error: 'Compliance audit not found' });
         return;
       }
 
@@ -76,10 +84,17 @@ export class ComplianceAuditController {
   static async listAudits(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id: documentId } = req.params;
-      const userId = (req as any).user?.id || (req.headers['x-user-id'] as string) || 'user-ahamed-001';
+      const userId = req.user!.id;
 
       if (!documentId) {
         res.status(400).json({ error: 'Document ID is required' });
+        return;
+      }
+
+      const doc = await repository.findById(documentId, userId);
+      if (!doc) {
+        logger.warn('Compliance audits list denied: Document not found or tenant access denied', { documentId, userId });
+        res.status(404).json({ error: 'Document not found or access denied' });
         return;
       }
 
@@ -91,3 +106,4 @@ export class ComplianceAuditController {
     }
   }
 }
+

@@ -396,10 +396,10 @@ export const ComplianceAuditFindingCard: React.FC<ComplianceAuditFindingCardProp
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {authorities.map((auth, idx) => {
-                      const actName = auth.actOrCourt || (auth as any).actOrStatute || auth.title || 'Applicable Law';
+                      const actName = auth.actOrCourt || auth.title || 'Applicable Law';
                       const secOrArt = auth.sectionOrArticle || '';
-                      const precedent = (auth as any).precedentCitation || auth.title;
-                      const courtName = (auth as any).court || auth.actOrCourt || 'Supreme Court of India';
+                      const precedent = auth.precedentCitation || auth.title;
+                      const courtName = auth.court || auth.actOrCourt || 'Supreme Court of India';
 
                       return (
                         <div

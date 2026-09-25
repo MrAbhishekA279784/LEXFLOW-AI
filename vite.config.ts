@@ -1,7 +1,8 @@
+/// <reference types="vitest" />
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
@@ -9,6 +10,48 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+      },
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.ts'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'dist/',
+          'src/test/',
+          '**/*.d.ts',
+          '**/*.test.{ts,tsx}',
+          'src/main.tsx',
+          'src/backend/db/migrations/',
+        ],
+      },
+    },
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@xyflow') || id.includes('reactflow')) {
+                return 'vendor-xyflow';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('firebase') || id.includes('@supabase')) {
+                return 'vendor-auth-db';
+              }
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor-react';
+              }
+            }
+          },
+        },
       },
     },
     server: {

@@ -77,6 +77,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           ) : showLogo ? (
             <button
               onClick={() => navigateTo('more')}
+              aria-label="User profile and menu"
               className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/90 shadow-sm cursor-pointer hover:ring-2 hover:ring-[#FF6B22]/30 transition-all"
             >
               <img 

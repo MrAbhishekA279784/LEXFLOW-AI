@@ -4,7 +4,7 @@ export const INITIAL_COMPLIANCE_AUDIT: ComplianceAuditRecord = {
   id: 'audit-rental-001',
   documentId: 'doc-rental',
   documentName: 'Rental Agreement.pdf',
-  userId: 'user-ahamed-001',
+  userId: 'demo-user-seed',
   status: 'completed',
   currentStep: 'Compliance audit synthesis completed. Report ready for review.',
   progressPercentage: 100,
