@@ -1,11 +1,11 @@
 import { DocumentItem, ClauseItem, RiskItem, ScenarioSimulation, ComparisonDiff, ChatMessage, UserProfile } from '../types';
 
 export const INITIAL_USER: UserProfile = {
-  name: 'Ahamed Khan',
-  email: 'ahamed@gmail.com',
+  name: '',
+  email: '',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-  documentsAnalyzed: 3,
-  scenariosRun: 8,
+  documentsAnalyzed: 0,
+  scenariosRun: 0,
 };
 
 export const INITIAL_DOCUMENTS: DocumentItem[] = [

@@ -4,6 +4,7 @@ import { LegalGraph } from '../backend/types/backendTypes';
 import { INITIAL_DOCUMENTS } from '../data/initialData';
 import { INITIAL_DOCUMENT_VERSIONS } from '../data/documentVersionsData';
 import { getAuthToken } from '../utils/apiAuth';
+import { auth } from '../lib/firebase';
 
 export interface DocumentContextType {
   documents: DocumentItem[];
@@ -269,7 +270,7 @@ export const DocumentProvider: React.FC<{ children: ReactNode }> = ({ children }
       timestamp: 'Just now',
       createdAt: new Date().toISOString(),
       author: {
-        name: 'Ahamed Khan',
+        name: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Counsel',
         role: 'Counsel'
       },
       summary: note ? `Reverted: ${note}` : `Reverted workspace state back to snapshot ${target.versionNumber}`,
@@ -342,7 +343,7 @@ export const DocumentProvider: React.FC<{ children: ReactNode }> = ({ children }
       timestamp: 'Just now',
       createdAt: new Date().toISOString(),
       author: {
-        name: 'Ahamed Khan',
+        name: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Counsel',
         role: revision.changeType === 'ai_redline' ? 'AI Assistant' : 'Counsel'
       },
       summary: revision.summary,

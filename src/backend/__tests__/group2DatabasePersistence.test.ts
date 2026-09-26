@@ -4,6 +4,9 @@ import { memoryStore } from '../repositories/memoryStore';
 import { DatabaseError } from '../utils/errors';
 import { v4 as uuidv4 } from 'uuid';
 
+import { resetSupabaseClient } from '../db/client';
+import { env } from '../config/env';
+
 describe('Group 2 — Database & Persistence Parity Test Suite', () => {
   const repo = new SupabaseRepository();
   const userA = 'user-persistence-a-' + uuidv4().substring(0, 8);
@@ -185,11 +188,20 @@ describe('Group 2 — Database & Persistence Parity Test Suite', () => {
   it('should throw DatabaseError in production when Supabase is unconfigured/fails instead of silent fake success', async () => {
     const originalNodeEnv = process.env.NODE_ENV;
     const originalVitest = process.env.VITEST;
+    const originalUrl = process.env.SUPABASE_URL;
+    const originalViteUrl = process.env.VITE_SUPABASE_URL;
+    const originalKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalEnvUrl = env.SUPABASE_URL;
 
     try {
-      // Simulate production environment
+      // Simulate production environment with unconfigured Supabase
       process.env.NODE_ENV = 'production';
       delete process.env.VITEST;
+      delete process.env.SUPABASE_URL;
+      delete process.env.VITE_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      (env as any).SUPABASE_URL = undefined;
+      resetSupabaseClient();
 
       const prodRepo = new SupabaseRepository();
       // Calling repository when Supabase client fails in production should throw DatabaseError
@@ -197,6 +209,11 @@ describe('Group 2 — Database & Persistence Parity Test Suite', () => {
     } finally {
       process.env.NODE_ENV = originalNodeEnv;
       if (originalVitest) process.env.VITEST = originalVitest;
+      if (originalUrl) process.env.SUPABASE_URL = originalUrl;
+      if (originalViteUrl) process.env.VITE_SUPABASE_URL = originalViteUrl;
+      if (originalKey) process.env.SUPABASE_SERVICE_ROLE_KEY = originalKey;
+      (env as any).SUPABASE_URL = originalEnvUrl;
+      resetSupabaseClient();
     }
   });
 });

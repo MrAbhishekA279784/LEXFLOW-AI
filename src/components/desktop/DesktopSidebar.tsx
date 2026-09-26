@@ -12,7 +12,9 @@ import {
   ArrowRight,
   Sparkles,
   History,
-  ShieldCheck
+  ShieldCheck,
+  LogOut,
+  HelpCircle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ScreenId } from '../../types';
@@ -25,7 +27,7 @@ interface NavItem {
 }
 
 export const DesktopSidebar: React.FC = () => {
-  const { currentScreen, navigateTo, setActiveDocTab } = useApp();
+  const { currentScreen, navigateTo, setActiveDocTab, handleSignOut } = useApp();
 
   const navItems: NavItem[] = [
     {
@@ -127,15 +129,37 @@ export const DesktopSidebar: React.FC = () => {
 
           {/* Settings */}
           <button
-            onClick={() => navigateTo('more')}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer text-left ${
-              currentScreen === 'more'
+            onClick={() => navigateTo('settings')}
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer text-left ${
+              currentScreen === 'settings'
                 ? 'bg-[#FFF2EA] text-[#FF6B22] font-bold border border-[#FF6B22]/20 shadow-xs'
                 : 'text-[#6F6A64] hover:text-[#151515] hover:bg-white/60'
             }`}
           >
             <Settings className="w-4 h-4 text-stone-500" />
             <span>Settings</span>
+          </button>
+
+          {/* Help & Support */}
+          <button
+            onClick={() => navigateTo('help')}
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer text-left ${
+              currentScreen === 'help'
+                ? 'bg-[#FFF2EA] text-[#FF6B22] font-bold border border-[#FF6B22]/20 shadow-xs'
+                : 'text-[#6F6A64] hover:text-[#151515] hover:bg-white/60'
+            }`}
+          >
+            <HelpCircle className="w-4 h-4 text-stone-500" />
+            <span>Help & Support</span>
+          </button>
+
+          {/* Sign Out */}
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-2xl text-xs font-semibold text-stone-500 hover:text-red-600 hover:bg-red-50/80 transition-all cursor-pointer text-left"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
           </button>
         </nav>
       </div>

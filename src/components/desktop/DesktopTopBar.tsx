@@ -75,7 +75,7 @@ export const DesktopTopBar: React.FC = () => {
         <motion.div 
           whileHover={{ scale: 1.02, y: -1 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => navigateTo('more')}
+          onClick={() => navigateTo('settings')}
           className="glass-panel p-1.5 pr-3 rounded-2xl border border-white/95 flex items-center gap-2.5 cursor-pointer hover:bg-white transition-all shadow-xs group hover:border-[#FF6B22]/30"
         >
           <img

@@ -220,6 +220,21 @@ export class MemoryStore implements
     };
     this.graphs.set('doc-rental', rentalGraph);
     this.graphs.set('doc-rental-001', rentalGraph);
+
+    // Seed shared base documents
+    INITIAL_DOCUMENTS.forEach(doc => {
+      const docRecord: DocumentRecord = {
+        ...doc,
+        userId: 'system',
+        size: doc.size,
+        status: doc.status as DocumentStatus,
+      };
+      this.documents.set(doc.id, docRecord);
+    });
+    const rentalDoc = this.documents.get('doc-rental');
+    if (rentalDoc) {
+      this.documents.set('doc-rental-001', { ...rentalDoc, id: 'doc-rental-001' });
+    }
   }
 
   private ensureUserSeeded(userId: string) {
@@ -238,6 +253,14 @@ export class MemoryStore implements
         });
       }
     });
+    // Also seed alias for rental agreement
+    const rentalUserDoc = this.documents.get(`doc-rental:${userId}`);
+    if (rentalUserDoc && !this.documents.has(`doc-rental-001:${userId}`)) {
+      this.documents.set(`doc-rental-001:${userId}`, {
+        ...rentalUserDoc,
+        id: 'doc-rental-001',
+      });
+    }
 
     // Seed versions for this user
     Object.entries(INITIAL_DOCUMENT_VERSIONS).forEach(([docId, vers]) => {
@@ -276,21 +299,80 @@ export class MemoryStore implements
       rawText: doc.rawText
     };
     this.documents.set(`${id}:${doc.userId}`, newDoc);
+    this.documents.set(id, newDoc);
     return newDoc;
   }
 
   async findById(id: string, userId?: string): Promise<DocumentRecord | null> {
+    const aliasId = id === 'doc-rental-001' ? 'doc-rental' : (id === 'doc-rental' ? 'doc-rental-001' : null);
+
     if (userId) {
       this.ensureUserSeeded(userId);
       const doc = this.documents.get(`${id}:${userId}`);
       if (doc) return doc;
+
+      if (aliasId) {
+        const aliasDoc = this.documents.get(`${aliasId}:${userId}`);
+        if (aliasDoc) {
+          const mappedDoc = { ...aliasDoc, id };
+          this.documents.set(`${id}:${userId}`, mappedDoc);
+          return mappedDoc;
+        }
+      }
+
+      // Check base template in memoryStore (only system templates can be shared)
+      const baseDoc = this.documents.get(id) || (aliasId ? this.documents.get(aliasId) : null);
+      if (baseDoc) {
+        if (baseDoc.userId === userId) {
+          return baseDoc;
+        }
+        if (baseDoc.userId === 'system' || INITIAL_DOCUMENTS.some(d => d.id === id || (aliasId && d.id === aliasId))) {
+          const userDoc: DocumentRecord = { ...baseDoc, id, userId };
+          this.documents.set(`${id}:${userId}`, userDoc);
+          return userDoc;
+        }
+        // Base doc belongs to another user - strictly deny cross-tenant access!
+        return null;
+      }
+
+      // Check initial documents list
+      const template = INITIAL_DOCUMENTS.find(d => d.id === id || (aliasId && d.id === aliasId));
+      if (template) {
+        const userDoc: DocumentRecord = {
+          ...template,
+          id,
+          userId,
+          status: template.status as DocumentStatus,
+        };
+        this.documents.set(`${id}:${userId}`, userDoc);
+        return userDoc;
+      }
+
       return null;
     }
-    // Fallback search when no userId specified (internal/admin)
+
+    // Fallback search when no userId specified (internal/admin / system callers)
+    if (this.documents.has(id)) {
+      return this.documents.get(id)!;
+    }
+    if (aliasId && this.documents.has(aliasId)) {
+      return this.documents.get(aliasId)!;
+    }
     for (const doc of this.documents.values()) {
       if (doc.id === id) {
         return doc;
       }
+    }
+    const template = INITIAL_DOCUMENTS.find(d => d.id === id || (aliasId && d.id === aliasId));
+    if (template) {
+      const docRecord: DocumentRecord = {
+        ...template,
+        id,
+        userId: 'system',
+        status: template.status as DocumentStatus,
+      };
+      this.documents.set(id, docRecord);
+      return docRecord;
     }
     return null;
   }
@@ -370,8 +452,16 @@ export class MemoryStore implements
   }
 
   async revertVersion(documentId: string, versionId: string, note?: string): Promise<{ document: DocumentRecord; version: DocumentVersion }> {
-    const doc = await this.findById(documentId);
-    if (!doc) throw new Error(`Document ${documentId} not found`);
+    let doc = await this.findById(documentId);
+    if (!doc) {
+      const { repository } = await import('./supabaseRepository');
+      doc = await repository.findById(documentId);
+      if (doc) {
+        this.documents.set(documentId, doc);
+      } else {
+        throw new Error(`Document ${documentId} not found`);
+      }
+    }
 
     const vers = await this.listVersions(documentId);
     const target = vers.find(v => v.id === versionId);

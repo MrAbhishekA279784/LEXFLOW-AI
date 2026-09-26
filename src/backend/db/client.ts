@@ -44,3 +44,7 @@ export function getSupabaseClient(): SupabaseClient | null {
 export function isSupabaseAvailable(): boolean {
   return getSupabaseClient() !== null;
 }
+
+export function resetSupabaseClient(): void {
+  supabaseInstance = null;
+}

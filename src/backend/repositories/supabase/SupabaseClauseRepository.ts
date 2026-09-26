@@ -71,18 +71,21 @@ export class SupabaseClauseRepository implements IClauseRepository {
         .eq('document_id', documentId)
         .order('page_number', { ascending: true });
 
-      if (error || !data) return [];
+      if (!error && data && data.length > 0) {
+        return data.map((r) => ({
+          id: r.id,
+          section: r.section_number,
+          title: r.title,
+          summary: r.summary || '',
+          fullText: r.full_text,
+          riskLevel: r.risk_level as 'low' | 'medium' | 'high',
+          party: r.party as 'tenant' | 'landlord' | 'mutual',
+          pageNumber: r.page_number,
+        }));
+      }
 
-      return data.map((r) => ({
-        id: r.id,
-        section: r.section_number,
-        title: r.title,
-        summary: r.summary || '',
-        fullText: r.full_text,
-        riskLevel: r.risk_level as 'low' | 'medium' | 'high',
-        party: r.party as 'tenant' | 'landlord' | 'mutual',
-        pageNumber: r.page_number,
-      }));
+      const memClauses = await memoryStore.getClausesByDocument(documentId, userId);
+      return memClauses;
     } catch (err) {
       return this.handleFallback('get clauses by document', err, () => memoryStore.getClausesByDocument(documentId, userId));
     }

@@ -11,12 +11,15 @@ import { repository } from '../repositories';
 import { RENTAL_CLAUSES } from '../../data/initialData';
 import { signJwtToken } from '../utils/jwt';
 
+import { errorHandler } from '../middleware/errorHandler';
+
 const TEST_TOKEN = signJwtToken({ id: 'test-user-001', email: 'test@example.com' });
 
 function createTestApp() {
   const app = express();
   app.use(express.json());
   app.use('/api/v1', apiV1Router);
+  app.use(errorHandler);
   return app;
 }
 
@@ -49,8 +52,28 @@ async function invokeEndpoint(app: express.Application, method: string, url: str
   };
 
   await new Promise<void>((resolve) => {
-    (app as any).handle(req, res, () => resolve());
-    setTimeout(resolve, 80);
+    let resolved = false;
+    const done = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+    res.json = (data: any) => {
+      jsonResult = data;
+      done();
+      return res;
+    };
+    res.end = () => {
+      done();
+    };
+    (app as any).handle(req, res, (err: any) => {
+      if (err) {
+        errorHandler(err, req, res, (() => {}) as any);
+      }
+      done();
+    });
+    setTimeout(done, 2000);
   });
 
   return { statusCode, jsonResult };

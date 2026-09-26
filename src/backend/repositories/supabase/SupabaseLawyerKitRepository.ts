@@ -43,6 +43,7 @@ export class SupabaseLawyerKitRepository implements ILawyerKitRepository {
       const { data, error } = await supabase.from('lawyer_kits').upsert(row).select().single();
       if (error || !data) throw error || new Error('Failed to save lawyer kit');
 
+      await memoryStore.saveLawyerKit(kit, userId).catch(() => {});
       return kit;
     } catch (err) {
       return this.handleFallback('save lawyer kit', err, () => memoryStore.saveLawyerKit(kit, userId));
@@ -57,7 +58,9 @@ export class SupabaseLawyerKitRepository implements ILawyerKitRepository {
       let query = supabase.from('lawyer_kits').select('*').eq('document_id', documentId).order('created_at', { ascending: false });
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query.limit(1).single();
-      if (error || !data) return null;
+      if (error || !data) {
+        return memoryStore.getLawyerKitByDocument(documentId, userId);
+      }
 
       return (data.kit_data as unknown as LawyerKitData) || null;
     } catch (err) {

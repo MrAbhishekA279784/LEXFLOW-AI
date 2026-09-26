@@ -15,35 +15,68 @@ function createTestApp() {
   return app;
 }
 
+async function dispatchApi(app: express.Application, reqOptions: {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  body?: any;
+}) {
+  let statusCode = 200;
+  let jsonResult: any = null;
+
+  const req: any = {
+    method: reqOptions.method,
+    url: reqOptions.url,
+    headers: { ...AUTH_HEADER, ...(reqOptions.headers || {}) },
+    socket: { remoteAddress: '127.0.0.1' },
+    ip: '127.0.0.1',
+    body: reqOptions.body || {}
+  };
+
+  const res: any = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    setHeader() { return this; }
+  };
+
+  await new Promise<void>((resolve) => {
+    let resolved = false;
+    const done = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+
+    res.json = (data: any) => {
+      jsonResult = data;
+      done();
+      return res;
+    };
+    res.end = () => {
+      done();
+    };
+
+    (app as any).handle(req, res, (err: any) => {
+      if (err) {
+        errorHandler(err, req, res, (() => {}) as any);
+      }
+      done();
+    });
+    setTimeout(done, 2500);
+  });
+
+  return { statusCode, jsonResult };
+}
+
 describe('API Integration Endpoints (/api/v1)', () => {
   it('should list documents with 200 OK', async () => {
     const app = createTestApp();
-    
-    const req = { 
-      method: 'GET', 
-      url: '/api/v1/documents', 
-      headers: { ...AUTH_HEADER },
-      socket: { remoteAddress: '127.0.0.1' }
-    } as any;
-
-    let statusCode = 200;
-    let jsonResult: any = null;
-
-    const res: any = {
-      status(code: number) {
-        statusCode = code;
-        return this;
-      },
-      json(data: any) {
-        jsonResult = data;
-        return this;
-      },
-      setHeader() { return this; }
-    };
-
-    await new Promise<void>((resolve) => {
-      (app as any).handle(req, res, () => resolve());
-      setTimeout(resolve, 50);
+    const { statusCode, jsonResult } = await dispatchApi(app, {
+      method: 'GET',
+      url: '/api/v1/documents'
     });
 
     expect(statusCode).toBe(200);
@@ -54,36 +87,13 @@ describe('API Integration Endpoints (/api/v1)', () => {
 
   it('should run a scenario on the rental document through the API', async () => {
     const app = createTestApp();
-
-    const req = {
+    const { statusCode, jsonResult } = await dispatchApi(app, {
       method: 'POST',
       url: '/api/v1/documents/doc-rental/scenarios',
-      headers: { 'content-type': 'application/json', ...AUTH_HEADER },
-      socket: { remoteAddress: '127.0.0.1' },
       body: {
         prompt: 'Agar main 3 mahine rent nahi du aur phir ghar chhod du toh kya hoga?',
         actorRole: 'tenant'
       }
-    } as any;
-
-    let statusCode = 200;
-    let jsonResult: any = null;
-
-    const res: any = {
-      status(code: number) {
-        statusCode = code;
-        return this;
-      },
-      json(data: any) {
-        jsonResult = data;
-        return this;
-      },
-      setHeader() { return this; }
-    };
-
-    await new Promise<void>((resolve) => {
-      (app as any).handle(req, res, () => resolve());
-      setTimeout(resolve, 150);
     });
 
     expect(statusCode).toBe(200);
@@ -97,33 +107,10 @@ describe('API Integration Endpoints (/api/v1)', () => {
 
   it('should generate a comprehensive lawyer prep-kit through the API', async () => {
     const app = createTestApp();
-
-    const req = {
+    const { statusCode, jsonResult } = await dispatchApi(app, {
       method: 'POST',
       url: '/api/v1/documents/doc-rental/lawyer-kit',
-      headers: { 'content-type': 'application/json', ...AUTH_HEADER },
-      socket: { remoteAddress: '127.0.0.1' },
       body: {}
-    } as any;
-
-    let statusCode = 200;
-    let jsonResult: any = null;
-
-    const res: any = {
-      status(code: number) {
-        statusCode = code;
-        return this;
-      },
-      json(data: any) {
-        jsonResult = data;
-        return this;
-      },
-      setHeader() { return this; }
-    };
-
-    await new Promise<void>((resolve) => {
-      (app as any).handle(req, res, () => resolve());
-      setTimeout(resolve, 150);
     });
 
     expect([200, 201]).toContain(statusCode);

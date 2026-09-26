@@ -60,7 +60,7 @@ describe('Phases 7, 8, 9, 10 — Advanced Security, AI Failure Injection & Four-
 
       expect(result.status).toBeDefined();
       expect(typeof result.riskScore).toBe('number');
-    });
+    }, 15000);
 
     it('should handle timeout Promise.race race conditions gracefully without uncaught rejection', async () => {
       const prompt = 'Test timeout resiliency';

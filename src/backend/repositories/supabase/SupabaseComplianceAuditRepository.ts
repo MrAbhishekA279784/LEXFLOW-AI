@@ -50,6 +50,7 @@ export class SupabaseComplianceAuditRepository implements IComplianceAuditReposi
       const { data, error } = await supabase.from('compliance_audits').upsert(row).select().single();
       if (error || !data) throw error || new Error('Failed to save compliance audit');
 
+      await memoryStore.saveComplianceAudit({ ...audit, userId: userId || audit.userId }).catch(() => {});
       return audit;
     } catch (err) {
       return this.handleFallback('save compliance audit', err, () => memoryStore.saveComplianceAudit({ ...audit, userId: userId || audit.userId }));
@@ -63,6 +64,7 @@ export class SupabaseComplianceAuditRepository implements IComplianceAuditReposi
     try {
       const { data, error } = await supabase.from('compliance_audits').update(updates).eq('id', id).select().single();
       if (error || !data) throw error || new Error('Failed to update compliance audit');
+      await memoryStore.updateComplianceAudit(id, updates).catch(() => {});
       return data as unknown as ComplianceAuditRecord;
     } catch (err) {
       return memoryStore.updateComplianceAudit(id, updates);
@@ -77,7 +79,9 @@ export class SupabaseComplianceAuditRepository implements IComplianceAuditReposi
       let query = supabase.from('compliance_audits').select('*').eq('id', id);
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query.single();
-      if (error || !data) return null;
+      if (error || !data) {
+        return memoryStore.getComplianceAuditById(id, userId);
+      }
 
       return {
         id: data.id,
@@ -108,7 +112,9 @@ export class SupabaseComplianceAuditRepository implements IComplianceAuditReposi
       let query = supabase.from('compliance_audits').select('*').eq('document_id', documentId).order('created_at', { ascending: false });
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query;
-      if (error || !data) return [];
+      if (error || !data || data.length === 0) {
+        return memoryStore.getComplianceAuditsByDocument(documentId, userId);
+      }
 
       return data.map((d) => ({
         id: d.id,

@@ -16,7 +16,7 @@ const EnvSchema = z.object({
   // AI Provider configuration
   AI_PROVIDER: z.enum(['gemini', 'fallback']).default('gemini'),
   GEMINI_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().default('gemini-2.5-flash'),
+  AI_MODEL: z.string().default('gemini-flash-latest'),
   
   // CORS
   CORS_ORIGIN: z.string().default('*'),
@@ -53,7 +53,7 @@ function loadEnv(): EnvConfig {
     SUPABASE_ANON_KEY: cleanEnvValue(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY),
     SUPABASE_SERVICE_ROLE_KEY: cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY),
     NODE_ENV: isTest ? 'test' : (process.env.NODE_ENV || 'development'),
-    AI_MODEL: process.env.AI_MODEL || 'gemini-2.5-flash',
+    AI_MODEL: process.env.AI_MODEL || 'gemini-flash-latest',
   };
 
   const result = EnvSchema.safeParse(rawEnv);
@@ -67,7 +67,7 @@ function loadEnv(): EnvConfig {
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
       AI_PROVIDER: isTest ? 'fallback' : 'gemini',
       GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-      AI_MODEL: 'gemini-2.5-flash',
+      AI_MODEL: 'gemini-flash-latest',
       CORS_ORIGIN: '*',
       RATE_LIMIT_MAX: 100,
       RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000,

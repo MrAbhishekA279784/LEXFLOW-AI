@@ -56,8 +56,7 @@ async function extractVerifiedUserFromRequest(req: Request) {
 
 /**
  * GET /api/v1/auth/session
- * Returns or creates a session for a verified identity.
- * In production, unauthenticated requests are strictly rejected.
+ * Returns session info for a verified identity. Rejects unauthenticated requests with 401.
  */
 authRoutes.get('/session', async (req: Request, res: Response, next) => {
   try {
@@ -74,29 +73,8 @@ authRoutes.get('/session', async (req: Request, res: Response, next) => {
       });
     }
 
-    // Unauthenticated fallback
-    if (process.env.NODE_ENV === 'production') {
-      logger.warn('Session endpoint rejected in production: No valid primary credentials', {
-        ip: req.ip,
-      });
-      return next(new AuthenticationError('Credential verification required. Production session minting without primary auth is prohibited.'));
-    }
-
-    // Development/Test fallback
-    const devUser = {
-      id: 'usr-default-ahamed',
-      email: 'ahamed@gmail.com',
-      name: 'Ahamed Khan',
-      role: 'authenticated',
-    };
-    const token = signJwtToken(devUser);
-    return res.json({
-      success: true,
-      data: {
-        token,
-        user: devUser,
-      },
-    });
+    logger.warn('Session endpoint rejected: No valid credentials', { ip: req.ip });
+    return next(new AuthenticationError('Authentication required. Missing or invalid Bearer token.'));
   } catch (err) {
     next(err);
   }
@@ -104,8 +82,7 @@ authRoutes.get('/session', async (req: Request, res: Response, next) => {
 
 /**
  * POST /api/v1/auth/session
- * Mints session JWT for verified identities only.
- * Production rejects untrusted client-supplied identity parameters in req.body.
+ * Mints session JWT for verified identities only. Rejects unauthenticated requests with 401.
  */
 authRoutes.post('/session', async (req: Request, res: Response, next) => {
   try {
@@ -122,29 +99,64 @@ authRoutes.post('/session', async (req: Request, res: Response, next) => {
       });
     }
 
-    if (process.env.NODE_ENV === 'production') {
-      logger.warn('Unverified session creation rejected in production', {
-        ip: req.ip,
-        body: req.body,
-      });
-      return next(new AuthenticationError('Cannot mint production session without verified primary authentication credentials.'));
+    logger.warn('Unverified session creation rejected', { ip: req.ip });
+    return next(new AuthenticationError('Authentication required. Missing or invalid Bearer token.'));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * PATCH /api/v1/auth/profile
+ * Updates authenticated user profile details (name, avatar, preferences).
+ * Strictly bound to req.user.id from verified auth token.
+ */
+authRoutes.patch('/profile', async (req: Request, res: Response, next) => {
+  try {
+    const verifiedUser = await extractVerifiedUserFromRequest(req);
+    if (!verifiedUser) {
+      return next(new AuthenticationError('Authentication required to update profile.'));
     }
 
-    // Non-production development helper
-    const { id, email, name } = req.body || {};
-    const devUser = {
-      id: id || 'usr-default-ahamed',
-      email: email || 'ahamed@gmail.com',
-      name: name || 'Ahamed Khan',
-      role: 'authenticated',
+    const { name, avatarUrl, preferences } = req.body || {};
+    const updatedName = name && typeof name === 'string' ? name.trim() : verifiedUser.name;
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.from('users').upsert({
+          id: verifiedUser.id,
+          email: verifiedUser.email,
+          display_name: updatedName,
+          name: updatedName,
+          avatar_url: avatarUrl || undefined,
+          preferences: preferences || undefined,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (dbErr) {
+        logger.warn('Database profile update warning', { error: String(dbErr) });
+      }
+    }
+
+    const updatedUser = {
+      ...verifiedUser,
+      name: updatedName,
+      avatarUrl,
+      preferences,
     };
-    const token = signJwtToken(devUser);
+
+    const token = signJwtToken({
+      id: verifiedUser.id,
+      email: verifiedUser.email,
+      name: updatedName,
+      role: verifiedUser.role || 'authenticated',
+    });
 
     return res.json({
       success: true,
       data: {
         token,
-        user: devUser,
+        user: updatedUser,
       },
     });
   } catch (err) {

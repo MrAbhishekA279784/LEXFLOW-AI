@@ -7,12 +7,17 @@ import { auth } from '../../lib/firebase';
 import { sendPasswordResetEmail, signOut, deleteUser } from 'firebase/auth';
 
 export const SettingsScreen: React.FC = () => {
-  const { user, goBack, navigateTo } = useApp();
+  const { user, goBack, navigateTo, updateUserProfile, handleSignOut: appSignOut } = useApp();
   
   // Profile state
-  const [name, setName] = useState(user.name);
+  const [name, setName] = useState(user.name || '');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+
+  useEffect(() => {
+    setName(user.name || '');
+    setAvatarUrl(user.avatarUrl);
+  }, [user]);
   
   // Preferences state
   const [language, setLanguage] = useState(user.preferences?.language || 'english');
@@ -30,31 +35,29 @@ export const SettingsScreen: React.FC = () => {
   }, [message]);
 
   const handleSaveProfile = async () => {
-    if (!supabase) {
-      setMessage({ text: 'Unable to save. Database not connected.', type: 'error' });
+    if (!name.trim()) {
+      setMessage({ text: 'Please enter a valid display name.', type: 'error' });
       return;
     }
     setLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error('Not authenticated');
-
-      const { error } = await supabase.from('users').update({
-        display_name: name,
-        avatar_url: avatarUrl,
+      const ok = await updateUserProfile({
+        name: name.trim(),
+        avatarUrl,
         preferences: {
           language,
           responseStyle,
           explanationPreference: explanationMode
-        },
-        updated_at: new Date().toISOString()
-      }).eq('id', currentUser.uid);
+        }
+      });
       
-      if (error) throw error;
-      
-      setIsEditingProfile(false);
-      setMessage({ text: 'Profile updated successfully.', type: 'success' });
-    } catch (err: any) {
+      if (ok) {
+        setIsEditingProfile(false);
+        setMessage({ text: 'Profile updated successfully.', type: 'success' });
+      } else {
+        setMessage({ text: 'Unable to save changes. Please try again.', type: 'error' });
+      }
+    } catch {
       setMessage({ text: 'Unable to save changes. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
@@ -62,27 +65,23 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const handleSavePreferences = async () => {
-    if (!supabase) {
-      setMessage({ text: 'Unable to save. Database not connected.', type: 'error' });
-      return;
-    }
     setLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error('Not authenticated');
-
-      const { error } = await supabase.from('users').update({
+      const ok = await updateUserProfile({
+        name,
+        avatarUrl,
         preferences: {
           language,
           responseStyle,
           explanationPreference: explanationMode
-        },
-        updated_at: new Date().toISOString()
-      }).eq('id', currentUser.uid);
-      
-      if (error) throw error;
-      setMessage({ text: 'Preferences saved successfully.', type: 'success' });
-    } catch (err: any) {
+        }
+      });
+      if (ok) {
+        setMessage({ text: 'Preferences saved successfully.', type: 'success' });
+      } else {
+        setMessage({ text: 'Unable to save preferences. Please try again.', type: 'error' });
+      }
+    } catch {
       setMessage({ text: 'Unable to save preferences. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
@@ -142,9 +141,8 @@ export const SettingsScreen: React.FC = () => {
   const handleSignOut = async () => {
     setLoading(true);
     try {
-      await signOut(auth);
-      navigateTo('welcome');
-    } catch (error) {
+      await appSignOut();
+    } catch {
       setMessage({ text: 'Error signing out.', type: 'error' });
       setLoading(false);
     }

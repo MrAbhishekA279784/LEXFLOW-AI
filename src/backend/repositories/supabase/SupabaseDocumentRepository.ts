@@ -47,7 +47,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
         .single();
 
       if (error || !data) throw error || new Error('Failed to insert document');
-      return {
+      const createdRecord: DocumentRecord = {
         id: data.id,
         name: data.name,
         type: data.file_type,
@@ -58,6 +58,9 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
         userId: data.user_id,
         summary: data.summary,
       };
+      // Keep memory store synchronized with all created documents
+      await memoryStore.create({ ...createdRecord, id: data.id, userId: data.user_id }).catch(() => {});
+      return createdRecord;
     } catch (err) {
       return this.handleFallback('create document', err, () => memoryStore.create(doc));
     }
@@ -71,19 +74,24 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
       let query = supabase.from('documents').select('*').eq('id', id);
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query.single();
-      if (error || !data) return null;
+      if (!error && data) {
+        return {
+          id: data.id,
+          name: data.name,
+          type: data.file_type,
+          size: `${(data.file_size_bytes / (1024 * 1024)).toFixed(1)} MB`,
+          uploadedAt: data.created_at,
+          status: data.status as DocumentStatus,
+          color: data.file_type === 'pdf' ? 'red' : 'blue',
+          userId: data.user_id,
+          summary: data.summary,
+        };
+      }
 
-      return {
-        id: data.id,
-        name: data.name,
-        type: data.file_type,
-        size: `${(data.file_size_bytes / (1024 * 1024)).toFixed(1)} MB`,
-        uploadedAt: data.created_at,
-        status: data.status as DocumentStatus,
-        color: data.file_type === 'pdf' ? 'red' : 'blue',
-        userId: data.user_id,
-        summary: data.summary,
-      };
+      // Check in-memory store for template documents or initial seeded documents
+      const memDoc = await memoryStore.findById(id, userId);
+      if (memDoc) return memDoc;
+      return null;
     } catch (err) {
       return this.handleFallback('find document by id', err, () => memoryStore.findById(id, userId));
     }
@@ -106,21 +114,25 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      if (error || !data) return [];
+      if (!error && data && data.length > 0) {
+        return data.map((d) => ({
+          id: d.id,
+          name: d.name,
+          type: d.file_type as 'pdf' | 'docx',
+          size: `${((d.file_size_bytes || 0) / (1024 * 1024)).toFixed(1)} MB`,
+          uploadedAt: d.created_at,
+          status: d.status as DocumentStatus,
+          color: d.file_type === 'pdf' ? 'red' : 'blue',
+          userId: d.user_id,
+          summary: d.summary || '',
+          riskCount: d.risk_count || 0,
+          clauseCount: d.clause_count || 0,
+        }));
+      }
 
-      return data.map((d) => ({
-        id: d.id,
-        name: d.name,
-        type: d.file_type as 'pdf' | 'docx',
-        size: `${((d.file_size_bytes || 0) / (1024 * 1024)).toFixed(1)} MB`,
-        uploadedAt: d.created_at,
-        status: d.status as DocumentStatus,
-        color: d.file_type === 'pdf' ? 'red' : 'blue',
-        userId: d.user_id,
-        summary: d.summary || '',
-        riskCount: d.risk_count || 0,
-        clauseCount: d.clause_count || 0,
-      }));
+      // If user has no custom documents yet in Supabase, load initial template documents from memoryStore
+      const memDocs = await memoryStore.listByUser(userId, options);
+      return memDocs;
     } catch (err) {
       return this.handleFallback('list documents by user', err, () => memoryStore.listByUser(userId, options));
     }
@@ -153,6 +165,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
 
       const { error } = await query;
       if (error) throw error;
+      await memoryStore.updateStatus(id, status, typeof summary === 'string' ? { summary, userId } : { ...summary, userId }).catch(() => {});
     } catch (err) {
       await this.handleFallback('update status', err, async () => {
         await memoryStore.updateStatus(id, status, typeof summary === 'string' ? { summary, userId } : { ...summary, userId });
@@ -174,6 +187,7 @@ export class SupabaseDocumentRepository implements IDocumentRepository {
       if (userId) query = query.eq('user_id', userId);
       const { error } = await query;
       if (error) throw error;
+      await memoryStore.delete(id, userId).catch(() => {});
     } catch (err) {
       await this.handleFallback('delete document', err, async () => {
         await memoryStore.delete(id, userId);

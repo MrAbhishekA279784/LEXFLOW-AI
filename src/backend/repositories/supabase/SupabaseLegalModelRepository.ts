@@ -58,8 +58,12 @@ export class SupabaseLegalModelRepository implements ILegalModelRepository {
         .eq('document_id', documentId)
         .single();
 
-      if (error || !data) return null;
-      return (data.model_data as unknown as LegalModelData) || null;
+      if (!error && data && data.model_data) {
+        return (data.model_data as unknown as LegalModelData);
+      }
+
+      const memModel = await memoryStore.getLegalModel(documentId, userId);
+      return memModel;
     } catch (err) {
       return this.handleFallback('get legal model', err, () => memoryStore.getLegalModel(documentId, userId));
     }

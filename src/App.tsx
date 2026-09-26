@@ -37,8 +37,21 @@ const SuspenseFallback: React.FC = () => (
 );
 
 const MainRouter: React.FC = () => {
-  const { currentScreen } = useApp();
+  const { currentScreen, isAuthLoading } = useApp();
   useHapticFeedback({ autoAttach: true });
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen w-full bg-[#F7F2EC] flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="flex items-center justify-center">
+          <span className="text-3xl font-extrabold tracking-tight text-[#151515]">LEX</span>
+          <span className="text-3xl font-extrabold tracking-tight text-[#FF6B22]">FLOW</span>
+        </div>
+        <div className="w-5 h-5 border-2 border-[#FF6B22] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-stone-500 font-medium">Authenticating session...</p>
+      </div>
+    );
+  }
 
   const renderActiveScreen = () => {
     switch (currentScreen) {

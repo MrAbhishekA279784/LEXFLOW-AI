@@ -61,10 +61,12 @@ export class SupabaseScenarioRepository implements IScenarioRepository {
       const { data, error } = await supabase.from('scenarios').upsert(row).select().single();
       if (error || !data) throw error || new Error('Failed to save scenario');
 
-      return {
+      const savedResult: ScenarioSimulationResult = {
         ...scenario,
         id: data.id,
       };
+      await memoryStore.saveScenario({ ...savedResult, userId: userId || scenario.userId || 'usr-default' }).catch(() => {});
+      return savedResult;
     } catch (err) {
       return this.handleFallback('save scenario', err, () => memoryStore.saveScenario({ ...scenario, userId: userId || scenario.userId || 'usr-default' }));
     }
@@ -78,7 +80,9 @@ export class SupabaseScenarioRepository implements IScenarioRepository {
       let query = supabase.from('scenarios').select('*').eq('id', id);
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query.single();
-      if (error || !data) return null;
+      if (error || !data) {
+        return memoryStore.findScenarioById(id, userId);
+      }
 
       return {
         id: data.id,
@@ -119,7 +123,9 @@ export class SupabaseScenarioRepository implements IScenarioRepository {
       let query = supabase.from('scenarios').select('*').eq('document_id', documentId).order('created_at', { ascending: false });
       if (userId) query = query.eq('user_id', userId);
       const { data, error } = await query;
-      if (error || !data) return [];
+      if (error || !data || data.length === 0) {
+        return memoryStore.listScenariosByDocument(documentId, userId);
+      }
 
       return data.map((d) => ({
         id: d.id,

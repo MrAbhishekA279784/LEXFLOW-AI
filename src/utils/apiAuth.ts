@@ -3,13 +3,21 @@ import { auth } from '../lib/firebase';
 let cachedToken: string | null = null;
 let tokenExpiry = 0;
 
+export function clearAuthToken(): void {
+  cachedToken = null;
+  tokenExpiry = 0;
+  try {
+    localStorage.removeItem('lexflow_auth_token');
+  } catch {}
+}
+
 /**
  * Retrieves an authentication token for API calls.
  * Prioritizes:
  * 1. Active Firebase auth token
  * 2. Cached in-memory valid token
  * 3. Stored localStorage token
- * 4. Fresh JWT session from backend /api/v1/auth/session
+ * Returns null if no valid authenticated token exists.
  */
 export async function getAuthToken(): Promise<string | null> {
   // 1. Firebase Auth user token
@@ -19,7 +27,7 @@ export async function getAuthToken(): Promise<string | null> {
       if (fbToken) return fbToken;
     }
   } catch {
-    // Ignore Firebase errors and fallback
+    // Ignore Firebase errors and check local storage
   }
 
   // 2. In-memory cached token
@@ -39,37 +47,14 @@ export async function getAuthToken(): Promise<string | null> {
           cachedToken = stored;
           tokenExpiry = payload.exp * 1000;
           return stored;
+        } else {
+          // Token expired, clear it
+          clearAuthToken();
         }
       }
     }
   } catch {
-    // Ignore localStorage parsing errors
-  }
-
-  // 4. Request signed session token from backend
-  try {
-    const res = await fetch('/api/v1/auth/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: 'usr-default-ahamed',
-        email: 'ahamed@gmail.com',
-        name: 'Ahamed Khan'
-      })
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data?.token) {
-        cachedToken = json.data.token;
-        tokenExpiry = now + 3600 * 1000;
-        try {
-          localStorage.setItem('lexflow_auth_token', cachedToken);
-        } catch {}
-        return cachedToken;
-      }
-    }
-  } catch {
-    // Server fetch fallback
+    clearAuthToken();
   }
 
   return null;

@@ -75,7 +75,10 @@ export class SupabaseGraphRepository implements IGraphRepository {
         supabase.from('graph_edges').select('*').eq('document_id', documentId),
       ]);
 
-      if (nodesRes.error || !nodesRes.data || nodesRes.data.length === 0) return null;
+      if (nodesRes.error || !nodesRes.data || nodesRes.data.length === 0) {
+        const memGraph = await memoryStore.getGraphByDocument(documentId, userId);
+        return memGraph;
+      }
 
       const nodes: GraphNode[] = nodesRes.data.map((n) => ({
         id: n.id,

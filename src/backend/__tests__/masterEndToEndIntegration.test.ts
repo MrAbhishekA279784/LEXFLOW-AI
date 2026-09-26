@@ -66,8 +66,39 @@ async function invokeEndpoint(app: express.Application, method: string, url: str
   };
 
   await new Promise<void>((resolve) => {
-    (app as any).handle(req, res, () => resolve());
-    setTimeout(resolve, 350);
+    let resolved = false;
+    const done = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+
+    res.json = (data: any) => {
+      jsonResult = data;
+      done();
+      return res;
+    };
+    res.send = (data: any) => {
+      if (Buffer.isBuffer(data)) {
+        responseBuffer = data;
+      } else {
+        jsonResult = data;
+      }
+      done();
+      return res;
+    };
+    res.end = () => {
+      done();
+    };
+
+    (app as any).handle(req, res, (err: any) => {
+      if (err) {
+        errorHandler(err, req, res, (() => {}) as any);
+      }
+      done();
+    });
+    setTimeout(done, 2500);
   });
 
   return { statusCode, jsonResult, responseBuffer, headers };

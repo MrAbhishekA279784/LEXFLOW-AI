@@ -22,7 +22,7 @@ import { INITIAL_DOCUMENT_VERSIONS } from '../data/documentVersionsData';
 import { supabase } from '../lib/supabase';
 import { auth } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getAuthToken } from '../utils/apiAuth';
+import { getAuthToken, clearAuthToken } from '../utils/apiAuth';
 
 import { DocumentProvider, useDocumentContext } from './DocumentContext';
 import { ScenarioProvider, useScenarioContext } from './ScenarioContext';
@@ -36,6 +36,9 @@ export interface AppContextType {
   goBack: () => void;
   user: UserProfile;
   setUser: (user: UserProfile) => void;
+  updateUserProfile: (updatedData: { name?: string; avatarUrl?: string; preferences?: any }) => Promise<boolean>;
+  handleSignOut: () => Promise<void>;
+  isAuthLoading: boolean;
   documents: DocumentItem[];
   activeDocument: DocumentItem;
   setActiveDocument: (doc: DocumentItem) => void;
@@ -112,10 +115,24 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const complianceCtx = useComplianceContext();
   const comparisonCtx = useComparisonContext();
 
-  const [currentScreen, setCurrentScreen] = useState<ScreenId>('home');
+  const EMPTY_USER: UserProfile = {
+    name: '',
+    email: '',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+    documentsAnalyzed: 0,
+    scenariosRun: 0,
+    preferences: {
+      language: 'english',
+      responseStyle: 'balanced',
+      explanationPreference: 'simple'
+    }
+  };
+
+  const [currentScreen, setCurrentScreen] = useState<ScreenId>('auth');
   const [navigationDirection, setNavigationDirection] = useState<'forward' | 'back' | 'none'>('none');
-  const [screenHistory, setScreenHistory] = useState<ScreenId[]>(['welcome']);
-  const [user, setUser] = useState<UserProfile>(INITIAL_USER);
+  const [screenHistory, setScreenHistory] = useState<ScreenId[]>(['auth']);
+  const [user, setUser] = useState<UserProfile>(EMPTY_USER);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
   const [analysisStep, setAnalysisStep] = useState<number>(3);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
   const [selectedEvidenceClause, setSelectedEvidenceClause] = useState<ClauseItem | null>(null);
@@ -127,43 +144,105 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        let profileName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User';
+        let avatar = firebaseUser.photoURL || EMPTY_USER.avatarUrl;
+        let prefs = EMPTY_USER.preferences;
+
         if (supabase) {
-          const { data } = await supabase.from('users').select('*').eq('id', firebaseUser.uid).single();
-          if (data) {
-             setUser({
-                name: data.display_name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                email: firebaseUser.email || '',
-                avatarUrl: data.avatar_url || firebaseUser.photoURL || INITIAL_USER.avatarUrl,
-                documentsAnalyzed: 0,
-                scenariosRun: 0,
-                preferences: data.preferences || {
-                  language: 'english',
-                  responseStyle: 'balanced',
-                  explanationPreference: 'simple'
-                }
-              });
-          } else {
-             setUser({
-                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-                email: firebaseUser.email || '',
-                avatarUrl: firebaseUser.photoURL || INITIAL_USER.avatarUrl,
-                documentsAnalyzed: 0,
-                scenariosRun: 0,
-                preferences: {
-                  language: 'english',
-                  responseStyle: 'balanced',
-                  explanationPreference: 'simple'
-                }
-             });
-          }
+          try {
+            const { data } = await supabase.from('users').select('*').eq('id', firebaseUser.uid).single();
+            if (data) {
+              profileName = data.display_name || data.name || profileName;
+              avatar = data.avatar_url || avatar;
+              if (data.preferences) prefs = data.preferences;
+            }
+          } catch {}
         }
+
+        setUser({
+          name: profileName,
+          email: firebaseUser.email || '',
+          avatarUrl: avatar,
+          documentsAnalyzed: 3,
+          scenariosRun: 8,
+          preferences: prefs
+        });
+
+        setCurrentScreen(prev => (prev === 'auth' || prev === 'welcome' ? 'home' : prev));
       } else {
-        setUser(INITIAL_USER);
+        clearAuthToken();
+        setUser(EMPTY_USER);
+        setCurrentScreen('auth');
       }
+      setIsAuthLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
+
+  const updateUserProfile = async (updatedData: {
+    name?: string;
+    avatarUrl?: string;
+    preferences?: any;
+  }): Promise<boolean> => {
+    try {
+      const token = await getAuthToken();
+      if (token) {
+        await fetch('/api/v1/auth/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(updatedData)
+        }).catch(() => {});
+      }
+
+      const currentUser = auth.currentUser;
+      if (currentUser && supabase) {
+        await supabase.from('users').upsert({
+          id: currentUser.uid,
+          email: currentUser.email || '',
+          display_name: updatedData.name,
+          name: updatedData.name,
+          avatar_url: updatedData.avatarUrl,
+          preferences: updatedData.preferences,
+          updated_at: new Date().toISOString()
+        });
+      }
+
+      if (currentUser) {
+        try {
+          const { updateProfile } = await import('firebase/auth');
+          await updateProfile(currentUser, {
+            ...(updatedData.name && { displayName: updatedData.name }),
+            ...(updatedData.avatarUrl && { photoURL: updatedData.avatarUrl })
+          });
+        } catch {}
+      }
+
+      setUser(prev => ({
+        ...prev,
+        ...(updatedData.name && { name: updatedData.name }),
+        ...(updatedData.avatarUrl && { avatarUrl: updatedData.avatarUrl }),
+        ...(updatedData.preferences && { preferences: updatedData.preferences })
+      }));
+
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleSignOut = async (): Promise<void> => {
+    try {
+      const { signOut } = await import('firebase/auth');
+      await signOut(auth);
+    } catch {}
+    clearAuthToken();
+    setUser(EMPTY_USER);
+    setCurrentScreen('auth');
+  };
 
   const navigateTo = (screen: ScreenId) => {
     setNavigationDirection('forward');
@@ -397,6 +476,9 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         goBack,
         user,
         setUser,
+        updateUserProfile,
+        handleSignOut,
+        isAuthLoading,
         documents: docCtx.documents,
         activeDocument: docCtx.activeDocument,
         setActiveDocument: docCtx.setActiveDocument,
