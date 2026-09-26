@@ -15,6 +15,7 @@ router.use('/legal', legalRoutes);
 router.use('/documents', authMiddleware, documentRoutes);
 router.use('/analysis', authMiddleware, analysisRoutes);
 router.use('/scenarios', authMiddleware, scenarioRoutes);
+router.use('/compare', authMiddleware, comparisonRoutes);
 router.use('/comparison', authMiddleware, comparisonRoutes);
 router.use('/comparisons', authMiddleware, comparisonRoutes);
 router.use('/lawyer-kit', authMiddleware, lawyerKitRoutes);

@@ -27,15 +27,19 @@ export const ScenarioProvider: React.FC<{ children: ReactNode }> = ({ children }
       const token = await getAuthToken();
       const targetDocId = docId || activeScenario.documentId || 'doc-rental';
       
-      const res = await fetch('/api/v1/scenarios/run', {
+      if (!token) {
+        setIsSimulating(false);
+        return;
+      }
+
+      const res = await fetch(`/api/v1/documents/${targetDocId}/scenarios`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          documentId: targetDocId,
           prompt: promptText
         })
       });

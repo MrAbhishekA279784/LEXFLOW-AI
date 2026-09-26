@@ -18,6 +18,7 @@ import { LawyerKitOverview } from '../lawyerKit/LawyerKitOverview';
 import { LawyerKitClauses } from '../lawyerKit/LawyerKitClauses';
 import { LawyerKitRisks } from '../lawyerKit/LawyerKitRisks';
 import { LawyerKitQuestions } from '../lawyerKit/LawyerKitQuestions';
+import { GeminiBadge } from '../common/GeminiBadge';
 
 type TabType = 'overview' | 'clauses' | 'risks' | 'scenario' | 'counsel';
 
@@ -59,9 +60,12 @@ export const LawyerKitScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-28 max-w-lg mx-auto flex flex-col justify-between">
+    <main role="main" aria-label="Lawyer Preparation Kit and Actionable Outputs" className="min-h-screen pb-28 max-w-lg mx-auto flex flex-col justify-between">
       <div>
-        <AppHeader title="Lawyer Prep-Kit" />
+        <AppHeader 
+          title="Lawyer Prep-Kit" 
+          rightElement={<GeminiBadge agentName="Lawyer Prep-Kit" />}
+        />
 
         <div className="px-4 pt-3 space-y-4 text-left">
           {/* Hero Banner */}
@@ -273,6 +277,6 @@ export const LawyerKitScreen: React.FC = () => {
           {kit?.disclaimer || 'Informational client consultation package. Not a substitute for professional legal advice.'}
         </p>
       </div>
-    </div>
+    </main>
   );
 };

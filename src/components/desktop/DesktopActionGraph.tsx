@@ -96,7 +96,10 @@ export const DesktopActionGraph: React.FC = () => {
   const edges = currentGraph?.edges || [];
 
   return (
-    <div className="glass-card p-5 rounded-3xl border border-white/80 shadow-md shadow-[#46321e]/5 flex flex-col justify-between relative overflow-hidden h-full min-h-[380px]">
+    <section 
+      aria-label="Legal Action Graph overview" 
+      className="glass-card p-5 rounded-3xl border border-white/80 shadow-md shadow-[#46321e]/5 flex flex-col justify-between relative overflow-hidden h-full min-h-[380px]"
+    >
       {/* Header */}
       <div className="flex items-start justify-between pb-2 border-b border-stone-100/80">
         <div>
@@ -221,6 +224,6 @@ export const DesktopActionGraph: React.FC = () => {
           <ArrowRight className="w-3 h-3" />
         </button>
       </div>
-    </div>
+    </section>
   );
 };

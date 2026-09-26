@@ -23,6 +23,7 @@ import { ComplianceAuditDebatePreview } from '../complianceAudit/ComplianceAudit
 import { ComplianceAuditFindingRow } from '../complianceAudit/ComplianceAuditFindingRow';
 import { ComplianceAuditFindingDrawer } from '../complianceAudit/ComplianceAuditFindingDrawer';
 import { ComplianceAuditRightPanel } from '../complianceAudit/ComplianceAuditRightPanel';
+import { GeminiBadge } from '../common/GeminiBadge';
 import { ComplianceFinding } from '../../types/complianceAuditTypes';
 import { formatSafeDate } from '../../utils/dateUtils';
 
@@ -141,9 +142,10 @@ export const ComplianceAuditScreen: React.FC = () => {
               {/* Document Identity & Protocol Badge */}
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF6B22]/10 text-[#FF6B22] border border-[#FF6B22]/20 flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FF6B22]/10 text-[#C94E0F] border border-[#FF6B22]/20 flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5" /> Compliance Audit
                   </span>
+                  <GeminiBadge agentName="Dual-Agent Auditor" />
                   <span className="text-[11px] text-stone-400 font-medium hidden sm:inline">
                     Dual-Agent Adversarial Protocol
                   </span>

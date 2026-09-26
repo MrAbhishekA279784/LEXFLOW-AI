@@ -17,6 +17,7 @@ import { RENTAL_CLAUSES } from '../../data/initialData';
 import { ScenarioFinancialBreakdown } from '../scenario/ScenarioFinancialBreakdown';
 import { ScenarioTimelineCard } from '../scenario/ScenarioTimelineCard';
 import { ScenarioLegalChainCard } from '../scenario/ScenarioLegalChainCard';
+import { GeminiBadge } from '../common/GeminiBadge';
 
 export const ScenarioResultScreen: React.FC = () => {
   const { 
@@ -53,8 +54,11 @@ export const ScenarioResultScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-28 max-w-md mx-auto">
-      <AppHeader title="Scenario Result" />
+    <main role="main" aria-label="What-If Scenario Result and Next Steps" className="min-h-screen pb-28 max-w-md mx-auto">
+      <AppHeader 
+        title="Scenario Result" 
+        rightElement={<GeminiBadge agentName="Scenario Stress-Test" />}
+      />
 
       <div className="px-4 pt-2 space-y-4 text-left">
         {/* Top Priority Warning Alert Card */}
@@ -343,6 +347,6 @@ export const ScenarioResultScreen: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 };

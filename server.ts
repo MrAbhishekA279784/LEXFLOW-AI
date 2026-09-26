@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import { createServer as createViteServer } from 'vite';
 import { apiV1Router } from './src/backend/routes';
 import { errorHandler } from './src/backend/middleware/errorHandler';
@@ -11,6 +12,9 @@ import { logger } from './src/backend/utils/logger';
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Gzip / Brotli response compression
+  app.use(compression() as unknown as express.RequestHandler);
 
   // Security & parser middlewares
   app.use(
@@ -69,8 +73,22 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '7d',
+      etag: true,
+      lastModified: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.match(/\.(js|css|woff2|woff|ttf)$/)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else if (filePath.match(/\.(png|jpg|jpeg|svg|ico|webp)$/)) {
+          res.setHeader('Cache-Control', 'public, max-age=604800');
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+        }
+      },
+    }));
     app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

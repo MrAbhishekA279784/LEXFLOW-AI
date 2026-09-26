@@ -57,8 +57,13 @@ export const CompareScreen: React.FC = () => {
       setError(null);
 
       const token = await getAuthToken();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (!token) {
+        throw new Error('Please sign in to run document comparisons.');
+      }
+      const headers: Record<string, string> = { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
 
       const res = await fetch('/api/v1/comparisons', {
         method: 'POST',
@@ -77,9 +82,10 @@ export const CompareScreen: React.FC = () => {
       const json = await res.json();
       setComparisonResult(json.data);
       setHasCompared(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to compare documents. Please verify both documents exist.';
       console.error('Comparison error:', err);
-      setError(err.message || 'Failed to compare documents. Please verify both documents exist.');
+      setError(msg);
     } finally {
       setIsComparing(false);
     }
@@ -88,12 +94,12 @@ export const CompareScreen: React.FC = () => {
   const docAItem = documents.find(d => d.id === selectedDocAId) || documents[0];
   const docBItem = documents.find(d => d.id === selectedDocBId) || documents[1] || documents[0];
 
-  const diffs = (comparisonResult?.diffs || []).filter((d: any) => 
+  const diffs = (comparisonResult?.diffs || []).filter((d: { status: string }) => 
     filterStatus === 'all' ? true : d.status === filterStatus
   );
 
   return (
-    <div className="min-h-screen pb-28 max-w-xl mx-auto flex flex-col justify-between">
+    <main role="main" aria-label="Forensic Document Comparison" className="min-h-screen pb-28 max-w-xl mx-auto flex flex-col justify-between">
       <div>
         <AppHeader title="Forensic Document Comparison" />
 
@@ -359,6 +365,6 @@ export const CompareScreen: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
-    </div>
+    </main>
   );
 };

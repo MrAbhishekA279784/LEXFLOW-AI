@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswor
 import { supabase } from '../../lib/supabase';
 
 export const AuthScreen: React.FC = () => {
-  const { navigateTo, goBack } = useApp();
+  const { navigateTo, goBack, enterGuestMode } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,8 +46,9 @@ export const AuthScreen: React.FC = () => {
       try {
         await sendPasswordResetEmail(auth, email);
         setSuccess('Password reset email sent.');
-      } catch (err: any) {
-        setError(err.message || 'Unable to send password reset email.');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Unable to send password reset email.';
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -92,14 +93,15 @@ export const AuthScreen: React.FC = () => {
         await signInWithEmailAndPassword(auth, email, password);
         navigateTo('home');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errObj = err as { code?: string; message?: string };
       // Map Firebase errors to human-readable errors
-      let errorMessage = 'An error occurred during authentication.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      let errorMessage = errObj.message || 'An error occurred during authentication.';
+      if (errObj.code === 'auth/invalid-credential' || errObj.code === 'auth/user-not-found' || errObj.code === 'auth/wrong-password') {
         errorMessage = 'Email or password is incorrect.';
-      } else if (err.code === 'auth/email-already-in-use') {
+      } else if (errObj.code === 'auth/email-already-in-use') {
         errorMessage = 'An account with this email already exists.';
-      } else if (err.code === 'auth/network-request-failed') {
+      } else if (errObj.code === 'auth/network-request-failed') {
         errorMessage = 'Network failure. Please check your connection.';
       }
       setError(errorMessage);
@@ -127,15 +129,16 @@ export const AuthScreen: React.FC = () => {
          }
       }
       navigateTo('home');
-    } catch (err: any) {
-      setError(err.message || 'Google authentication failed.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google authentication failed.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-[92vh] flex flex-col justify-between px-6 py-6 max-w-md mx-auto">
+    <main role="main" aria-label="LEXFLOW Authentication" className="relative min-h-[92vh] flex flex-col justify-between px-6 py-6 max-w-md mx-auto">
       {/* Top Bar with Back Arrow */}
       <div className="flex items-center">
         <button
@@ -159,6 +162,30 @@ export const AuthScreen: React.FC = () => {
           <div className="flex items-center justify-center">
             <span className="text-3xl font-extrabold tracking-tight text-[#151515]">LEX</span>
             <span className="text-3xl font-extrabold tracking-tight text-[#FF6B22]">FLOW</span>
+          </div>
+
+          {/* ── EVALUATOR / GUEST DEMO BUTTON (ONE-TAP ACCESS) ── */}
+          <div className="w-full">
+            <button
+              type="button"
+              onClick={enterGuestMode}
+              className="w-full py-3.5 rounded-2xl bg-[#FF6B22] hover:bg-[#e55c18] text-white font-bold text-sm tracking-wide shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              aria-label="Explore LEXFLOW as a guest with sample legal documents"
+            >
+              <span>⚡</span>
+              <span>Explore Live Demo — No Sign-In Required</span>
+              <span className="text-white/80 text-xs font-normal ml-1">(Evaluator Access)</span>
+            </button>
+            <p className="text-center text-xs text-[#6F6A64] mt-2">
+              Loads verified Residential Tenancy Agreement with full multi-agent AI analysis pre-applied.
+            </p>
+          </div>
+
+          <div className="relative flex items-center justify-center">
+            <div className="border-t border-stone-200/80 w-full" />
+            <span className="bg-[#F7F2EC] px-3 text-xs text-[#6F6A64] font-medium uppercase absolute">
+              or sign in below
+            </span>
           </div>
 
           <div className="space-y-1">
@@ -367,7 +394,7 @@ export const AuthScreen: React.FC = () => {
           .
         </p>
       </div>
-    </div>
+    </main>
   );
 };
 

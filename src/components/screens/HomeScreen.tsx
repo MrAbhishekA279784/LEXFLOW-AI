@@ -13,6 +13,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { AppHeader } from '../common/AppHeader';
+import { GeminiBadge } from '../common/GeminiBadge';
 import { DocumentItem } from '../../types';
 
 export const HomeScreen: React.FC = () => {
@@ -44,22 +45,37 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-28 max-w-md mx-auto">
+    <main role="main" aria-label="LEXFLOW Home Dashboard" className="min-h-screen pb-28 max-w-md mx-auto">
       {/* Header with LEXFLOW and User Avatar */}
       <AppHeader showBack={false} showLogo={true} />
 
+      {/* Legal Aid Disclaimer — Required for hackathon alignment */}
+      <div
+        role="note"
+        aria-label="Legal disclaimer"
+        className="mx-5 mt-3 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 shadow-xs"
+      >
+        <span className="text-amber-600 text-base mt-0.5 shrink-0" aria-hidden="true">⚖️</span>
+        <p className="text-[11px] text-amber-900 leading-snug">
+          <strong>Notice:</strong> LEXFLOW provides AI-powered legal document understanding, plain-language simplification, and scenario modeling. It does not replace a licensed attorney.
+        </p>
+      </div>
+
       <div className="px-5 pt-4 space-y-6">
-        {/* User Greeting */}
+        {/* User Greeting with Gemini Badge */}
         <motion.div 
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="space-y-0.5 text-left"
+          className="space-y-1.5 text-left"
         >
-          <h2 className="text-2xl font-bold text-[#151515] tracking-tight">
-            Good morning, {user.name.split(' ')[0]}! 👋
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-[#151515] tracking-tight">
+              Good morning, {user.name ? user.name.split(' ')[0] : 'Visitor'}! 👋
+            </h2>
+            <GeminiBadge agentName="4-Agent Orchestrator" />
+          </div>
           <p className="text-sm text-[#6F6A64]">
-            Let's make legal simple.
+            Making complex legal documents simple, clear, and actionable.
           </p>
         </motion.div>
 
@@ -75,7 +91,7 @@ export const HomeScreen: React.FC = () => {
             type="text"
             value={questionInput}
             onChange={(e) => setQuestionInput(e.target.value)}
-            placeholder="Ask a legal question..."
+            placeholder="Ask a question about your contract..."
             className="w-full pl-4 pr-13 py-3.5 rounded-2xl glass-panel text-sm text-[#151515] placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#FF6B22]/30 border border-white/90 shadow-md shadow-[#46321e]/5"
           />
           <button
@@ -87,15 +103,64 @@ export const HomeScreen: React.FC = () => {
           </button>
         </motion.form>
 
-        {/* 5 Feature Action Cards Grid */}
+        {/* Feature Action Cards Grid (7 Core Hackathon Use Cases) */}
         <motion.div 
           initial={{ y: 15, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
           className="space-y-3"
         >
+          {/* Top Row: Plain English Simplifier & Actionable Checklist */}
           <div className="grid grid-cols-2 gap-3">
-            {/* 1. Upload Document */}
+            {/* 1. Document Simplifier — Use Case #1 */}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                if (documents.length > 0) {
+                  setActiveDocument(documents[0]);
+                  navigateTo('legal-graph');
+                } else {
+                  navigateTo('upload');
+                }
+              }}
+              className="text-left p-3.5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/80 flex flex-col justify-between h-28 cursor-pointer transition-all hover:scale-[1.02] shadow-xs"
+              aria-label="Simplify legal document into plain English"
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center text-white">
+                <Lightbulb className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Document Simplifier</h3>
+                <p className="text-[10px] text-blue-700 font-medium">Plain English · Clause by Clause</p>
+              </div>
+            </button>
+
+            {/* 2. Actionable Checklist — Use Case #6 */}
+            <button
+              onClick={() => {
+                triggerHaptic('light');
+                if (documents.length > 0) {
+                  setActiveDocument(documents[0]);
+                  navigateTo('lawyer-kit');
+                } else {
+                  navigateTo('upload');
+                }
+              }}
+              className="text-left p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200/80 flex flex-col justify-between h-28 cursor-pointer transition-all hover:scale-[1.02] shadow-xs"
+              aria-label="Get actionable checklist and lawyer preparation"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Action Checklist</h3>
+                <p className="text-[10px] text-emerald-800 font-medium">Next Steps · Lawyer Prep</p>
+              </div>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* 3. Upload Document */}
             <button
               onClick={() => {
                 triggerHaptic('light');
@@ -103,7 +168,7 @@ export const HomeScreen: React.FC = () => {
               }}
               className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer border border-white/80 transition-all hover:scale-[1.02]"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#FFF1E8] border border-[#FF6B22]/20 flex items-center justify-center text-[#FF6B22]">
+              <div className="w-8 h-8 rounded-xl bg-[#FFF1E8] border border-[#FF6B22]/20 flex items-center justify-center text-[#C94E0F]">
                 <Upload className="w-4 h-4" />
               </div>
               <div>
@@ -112,7 +177,7 @@ export const HomeScreen: React.FC = () => {
               </div>
             </button>
 
-            {/* 2. Compare Documents */}
+            {/* 4. Compare Documents */}
             <button
               onClick={() => {
                 triggerHaptic('light');
@@ -129,7 +194,7 @@ export const HomeScreen: React.FC = () => {
               </div>
             </button>
 
-            {/* 3. Try a Scenario */}
+            {/* 5. Try a Scenario */}
             <button
               onClick={() => {
                 triggerHaptic('light');
@@ -141,12 +206,12 @@ export const HomeScreen: React.FC = () => {
                 <Scale className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Try a Scenario</h3>
-                <p className="text-[10px] text-[#6F6A64]">What could happen?</p>
+                <h3 className="text-xs sm:text-sm font-bold text-[#151515]">What-If Scenarios</h3>
+                <p className="text-[10px] text-[#6F6A64]">Explore Next Steps</p>
               </div>
             </button>
 
-            {/* 4. Compliance Audit (Core Feature Prominence) */}
+            {/* 6. Compliance Audit */}
             <button
               onClick={() => {
                 triggerHaptic('light');
@@ -154,17 +219,17 @@ export const HomeScreen: React.FC = () => {
               }}
               className="text-left glass-card glass-card-hover p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer border border-[#FF6B22]/30 bg-gradient-to-br from-white/90 to-orange-50/50 transition-all hover:scale-[1.02] shadow-xs"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#FF6B22]/10 border border-[#FF6B22]/30 flex items-center justify-center text-[#FF6B22]">
+              <div className="w-8 h-8 rounded-xl bg-[#FF6B22]/10 border border-[#FF6B22]/30 flex items-center justify-center text-[#C94E0F]">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="text-xs sm:text-sm font-bold text-[#151515]">Compliance Audit</h3>
-                <p className="text-[10px] text-[#6F6A64]">Dual-agent audit</p>
+                <p className="text-[10px] text-[#6F6A64]">4-Agent Legal Review</p>
               </div>
             </button>
           </div>
 
-          {/* 5. Tips & Guides (Full width card) */}
+          {/* 7. Tips & Guides (Full width card) */}
           <button
             onClick={() => {
               triggerHaptic('light');
@@ -178,7 +243,7 @@ export const HomeScreen: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-xs font-bold text-[#151515]">Tips & Legal Guides</h3>
-                <p className="text-[10px] text-[#6F6A64]">Tenant rights & negotiation checklists</p>
+                <p className="text-[10px] text-[#6F6A64]">Tenant rights, legal access & negotiation checklists</p>
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-stone-400" />
@@ -273,6 +338,6 @@ export const HomeScreen: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 };

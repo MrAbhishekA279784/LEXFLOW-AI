@@ -20,6 +20,7 @@ import { RENTAL_CLAUSES, RENTAL_RISKS } from '../../data/initialData';
 import { DocumentHistoryView } from '../history/DocumentHistoryView';
 import { ComplianceAuditWorkspace } from '../complianceAudit/ComplianceAuditWorkspace';
 import { InteractiveLegalGraph } from '../graph/InteractiveLegalGraph';
+import { GeminiBadge } from '../common/GeminiBadge';
 import { GraphNode } from '../../backend/types/backendTypes';
 
 export const LegalGraphScreen: React.FC = () => {
@@ -56,7 +57,7 @@ export const LegalGraphScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 text-center">
+    <main role="main" aria-label="Interactive Legal Graph and Analysis" className="min-h-screen pb-24 text-center">
       {/* App Header */}
       <AppHeader
         title={activeDocument.name}
@@ -64,6 +65,7 @@ export const LegalGraphScreen: React.FC = () => {
         onBack={() => navigateTo('home')}
         rightElement={
           <div className="flex items-center gap-1.5">
+            <GeminiBadge agentName="Legal Analyst" />
             <button
               onClick={() => setIsGraphExportModalOpen(true)}
               className="px-2.5 py-1 rounded-xl bg-white/90 hover:bg-white text-xs font-bold text-[#FF6B22] border border-[#FF6B22]/30 shadow-2xs cursor-pointer transition-all flex items-center gap-1"
@@ -364,6 +366,6 @@ export const LegalGraphScreen: React.FC = () => {
           <DocumentHistoryView />
         )}
       </div>
-    </div>
+    </main>
   );
 };

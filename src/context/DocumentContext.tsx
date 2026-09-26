@@ -47,10 +47,14 @@ export const DocumentProvider: React.FC<{ children: ReactNode }> = ({ children }
     setGraphError(null);
     try {
       const token = await getAuthToken();
+      if (!token) {
+        setIsGraphLoading(false);
+        return currentGraph;
+      }
       const res = await fetch(`/api/v1/documents/${targetId}/graph`, {
         headers: {
           'Accept': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!res.ok) {
@@ -78,12 +82,16 @@ export const DocumentProvider: React.FC<{ children: ReactNode }> = ({ children }
     setGraphError(null);
     try {
       const token = await getAuthToken();
+      if (!token) {
+        setIsGraphLoading(false);
+        return currentGraph;
+      }
       const res = await fetch(`/api/v1/documents/${targetId}/graph/regenerate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!res.ok) {

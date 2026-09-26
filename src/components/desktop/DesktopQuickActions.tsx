@@ -14,22 +14,44 @@ import { useApp } from '../../context/AppContext';
 import { TiltCard } from '../common/TiltCard';
 
 export const DesktopQuickActions: React.FC = () => {
-  const { navigateTo } = useApp();
+  const { navigateTo, documents, setActiveDocument } = useApp();
   const [showTipsModal, setShowTipsModal] = useState(false);
 
   const actions = [
     {
+      id: 'simplifier',
+      title: 'Document Simplifier',
+      subtitle: 'Plain English clauses',
+      icon: <Lightbulb className="w-5 h-5 text-blue-600" />,
+      iconBg: 'bg-blue-100/80 border-blue-200/60',
+      action: () => {
+        if (documents.length > 0) setActiveDocument(documents[0]);
+        navigateTo('legal-graph');
+      },
+    },
+    {
+      id: 'checklist',
+      title: 'Action Checklist',
+      subtitle: 'Lawyer prep & next steps',
+      icon: <FileCheck2 className="w-5 h-5 text-emerald-600" />,
+      iconBg: 'bg-emerald-100/80 border-emerald-200/60',
+      action: () => {
+        if (documents.length > 0) setActiveDocument(documents[0]);
+        navigateTo('lawyer-kit');
+      },
+    },
+    {
       id: 'upload',
       title: 'Upload Document',
       subtitle: 'Analyze with AI',
-      icon: <FileUp className="w-5 h-5 text-[#FF6B22]" />,
+      icon: <FileUp className="w-5 h-5 text-[#C94E0F]" />,
       iconBg: 'bg-orange-100/80 border-orange-200/60',
       action: () => navigateTo('upload'),
     },
     {
       id: 'scenario',
-      title: 'Try a Scenario',
-      subtitle: 'What could happen?',
+      title: 'What-If Scenarios',
+      subtitle: 'Explore outcomes & risks',
       icon: <Scale className="w-5 h-5 text-emerald-600" />,
       iconBg: 'bg-emerald-100/80 border-emerald-200/60',
       action: () => navigateTo('scenario-input'),
@@ -37,7 +59,7 @@ export const DesktopQuickActions: React.FC = () => {
     {
       id: 'compare',
       title: 'Compare Documents',
-      subtitle: 'Two documents',
+      subtitle: 'Identify clause shifts',
       icon: <Layers className="w-5 h-5 text-blue-600" />,
       iconBg: 'bg-blue-100/80 border-blue-200/60',
       action: () => navigateTo('compare'),
@@ -45,24 +67,16 @@ export const DesktopQuickActions: React.FC = () => {
     {
       id: 'compliance-audit',
       title: 'Compliance Audit',
-      subtitle: 'Multi-Agent Auditor',
+      subtitle: '4-Agent Legal Review',
       icon: <ShieldCheck className="w-5 h-5 text-purple-600" />,
       iconBg: 'bg-purple-100/80 border-purple-200/60',
       action: () => navigateTo('compliance-audit'),
-    },
-    {
-      id: 'tips',
-      title: 'Tips & Guides',
-      subtitle: 'Know your rights',
-      icon: <Lightbulb className="w-5 h-5 text-amber-600" />,
-      iconBg: 'bg-amber-100/80 border-amber-200/60',
-      action: () => setShowTipsModal(true),
     },
   ];
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
         {actions.map((act) => (
           <TiltCard
             key={act.id}

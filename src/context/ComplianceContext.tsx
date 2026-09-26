@@ -27,10 +27,11 @@ export const ComplianceProvider: React.FC<{ children: ReactNode }> = ({ children
     const targetId = docId || 'doc-rental';
     try {
       const token = await getAuthToken();
-      const res = await fetch(`/api/v1/compliance-audit/${targetId}`, {
+      if (!token) return complianceAudits;
+      const res = await fetch(`/api/v1/documents/${targetId}/compliance-audits`, {
         headers: {
           'Accept': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         }
       });
       if (res.ok) {
@@ -52,12 +53,16 @@ export const ComplianceProvider: React.FC<{ children: ReactNode }> = ({ children
     setIsAuditRunning(true);
     try {
       const token = await getAuthToken();
-      const res = await fetch(`/api/v1/compliance-audit/${targetId}/run`, {
+      if (!token) {
+        setIsAuditRunning(false);
+        return activeComplianceAudit;
+      }
+      const res = await fetch(`/api/v1/documents/${targetId}/compliance-audit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         }
       });
 

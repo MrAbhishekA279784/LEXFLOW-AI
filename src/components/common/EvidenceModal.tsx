@@ -73,7 +73,7 @@ export const EvidenceModal: React.FC = () => {
 
           {/* Finding Context & Summary */}
           <div className="mt-4 p-3.5 rounded-2xl bg-[#FFF8F2] border border-[#FF6B22]/20">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#FF6B22]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#C94E0F]">
               <ShieldCheck className="w-4 h-4" />
               <span>Plain English Interpretation</span>
             </div>

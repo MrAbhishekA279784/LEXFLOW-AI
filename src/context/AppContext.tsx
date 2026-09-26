@@ -38,6 +38,7 @@ export interface AppContextType {
   setUser: (user: UserProfile) => void;
   updateUserProfile: (updatedData: { name?: string; avatarUrl?: string; preferences?: any }) => Promise<boolean>;
   handleSignOut: () => Promise<void>;
+  enterGuestMode: () => void;
   isAuthLoading: boolean;
   documents: DocumentItem[];
   activeDocument: DocumentItem;
@@ -242,6 +243,25 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     clearAuthToken();
     setUser(EMPTY_USER);
     setCurrentScreen('auth');
+  };
+
+  const enterGuestMode = () => {
+    setUser({
+      name: 'Demo Visitor',
+      email: 'demo@lexflow.ai',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      documentsAnalyzed: 3,
+      scenariosRun: 2,
+      preferences: {
+        language: 'english',
+        responseStyle: 'balanced',
+        explanationPreference: 'simple',
+      },
+    });
+    if (INITIAL_DOCUMENTS && INITIAL_DOCUMENTS.length > 0) {
+      docCtx.setActiveDocument(INITIAL_DOCUMENTS[0]);
+    }
+    setCurrentScreen('home');
   };
 
   const navigateTo = (screen: ScreenId) => {
@@ -478,6 +498,7 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         setUser,
         updateUserProfile,
         handleSignOut,
+        enterGuestMode,
         isAuthLoading,
         documents: docCtx.documents,
         activeDocument: docCtx.activeDocument,

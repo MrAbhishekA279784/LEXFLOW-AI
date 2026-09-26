@@ -61,7 +61,7 @@ export const UploadScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-28 max-w-md mx-auto flex flex-col justify-between">
+    <main role="main" aria-label="Upload Legal Document" className="min-h-screen pb-28 max-w-md mx-auto flex flex-col justify-between">
       {/* Header */}
       <div>
         <AppHeader title="Upload Document" />
@@ -184,6 +184,6 @@ export const UploadScreen: React.FC = () => {
           <span>Your documents are private and secure.</span>
         </div>
       </div>
-    </div>
+    </main>
   );
 };

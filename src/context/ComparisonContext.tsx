@@ -18,12 +18,16 @@ export const ComparisonProvider: React.FC<{ children: ReactNode }> = ({ children
     setIsComparing(true);
     try {
       const token = await getAuthToken();
+      if (!token) {
+        setIsComparing(false);
+        return comparisonResults;
+      }
       const res = await fetch('/api/v1/compare', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ documentAId: docAId, documentBId: docBId })
       });

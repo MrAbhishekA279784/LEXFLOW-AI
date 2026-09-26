@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Bot, Shield, FileText, Sparkles, Send } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AppHeader } from '../common/AppHeader';
+import { GeminiBadge } from '../common/GeminiBadge';
 import { RENTAL_CLAUSES } from '../../data/initialData';
 
 export const AssistantScreen: React.FC = () => {
@@ -37,9 +38,13 @@ export const AssistantScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 max-w-md mx-auto flex flex-col justify-between">
+    <main role="main" aria-label="AI Legal Assistant Q&A" className="min-h-screen pb-24 max-w-md mx-auto flex flex-col justify-between">
       {/* Header */}
-      <AppHeader title="AI Legal Assistant" subtitle={`Context: ${activeDocument.name}`} />
+      <AppHeader 
+        title="AI Legal Assistant" 
+        subtitle={`Context: ${activeDocument.name}`} 
+        rightElement={<GeminiBadge agentName="Legal Q&A" />}
+      />
 
       {/* Messages Scroll Area */}
       <div className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
@@ -118,6 +123,6 @@ export const AssistantScreen: React.FC = () => {
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 };
