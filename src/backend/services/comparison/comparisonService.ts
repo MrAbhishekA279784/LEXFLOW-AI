@@ -3,6 +3,7 @@ import { aiService } from '../ai/aiService';
 import { ComparisonResultSchema, ComparisonDiffItemSchema } from '../../schemas/aiResultSchemas';
 import { PromptSecurity } from '../../utils/promptSecurity';
 import { NotFoundError } from '../../utils/errors';
+import { ClauseItem, StructuralDiffItem } from '../../../types';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -92,7 +93,7 @@ Instructions:
   /**
    * Deterministically aligns clauses by section name / title
    */
-  private static computeStructuralClauseDiffs(clausesA: any[], clausesB: any[]) {
+  private static computeStructuralClauseDiffs(clausesA: ClauseItem[], clausesB: ClauseItem[]) {
     const diffs: any[] = [];
     const matchedBIds = new Set<string>();
 
@@ -151,8 +152,8 @@ Instructions:
   private static generateDeterministicComparison(
     docAName: string,
     docBName: string,
-    clausesA: any[],
-    clausesB: any[],
+    clausesA: ClauseItem[],
+    clausesB: ClauseItem[],
     structuralDiffs: any[]
   ): ComparisonResult {
     const formattedDiffs = structuralDiffs.map((d, idx) => {

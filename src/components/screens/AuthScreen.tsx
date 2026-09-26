@@ -274,20 +274,24 @@ export const AuthScreen: React.FC = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="relative"
               >
+                <label htmlFor="auth-name" className="sr-only">Full Name</label>
                 <input
+                  id="auth-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your name"
-                  aria-label="Name"
+                  aria-label="Full Name"
                   className="w-full px-4 py-3.5 rounded-2xl glass-input text-sm text-[#151515] placeholder-stone-400"
                 />
               </motion.div>
             )}
 
             <div className="relative">
+              <label htmlFor="auth-email" className="sr-only">Email address</label>
               <Mail className="w-5 h-5 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
+                id="auth-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -299,8 +303,10 @@ export const AuthScreen: React.FC = () => {
 
             {mode !== 'forgot' && (
               <div className="relative">
+                <label htmlFor="auth-password" className="sr-only">Password</label>
                 <Lock className="w-5 h-5 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
+                  id="auth-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -311,7 +317,7 @@ export const AuthScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 focus:outline-none"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 focus:outline-none cursor-pointer"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -326,8 +332,10 @@ export const AuthScreen: React.FC = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="relative"
               >
+                <label htmlFor="auth-confirm-password" className="sr-only">Confirm Password</label>
                 <Lock className="w-5 h-5 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
+                  id="auth-confirm-password"
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

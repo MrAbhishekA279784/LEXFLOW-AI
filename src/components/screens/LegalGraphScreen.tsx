@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { 
   ArrowRight, 
   Calendar, 
@@ -22,6 +22,77 @@ import { ComplianceAuditWorkspace } from '../complianceAudit/ComplianceAuditWork
 import { InteractiveLegalGraph } from '../graph/InteractiveLegalGraph';
 import { GeminiBadge } from '../common/GeminiBadge';
 import { GraphNode } from '../../backend/types/backendTypes';
+import { ClauseItem, RiskItem } from '../../types';
+
+const MemoizedClauseCard = memo(({ clause, onOpenEvidence }: { clause: ClauseItem; onOpenEvidence: (clause: ClauseItem) => void }) => (
+  <div
+    onClick={() => onOpenEvidence(clause)}
+    className="glass-card glass-card-hover p-3.5 rounded-2xl cursor-pointer border border-white/80"
+  >
+    <div className="flex items-center justify-between mb-1.5">
+      <span className="text-xs font-bold text-[#FF6B22]">
+        {clause.section}
+      </span>
+      <GlassBadge 
+        variant={clause.riskLevel === 'high' ? 'warning' : 'neutral'}
+      >
+        {clause.riskLevel === 'high' ? 'High Impact' : 'Standard'}
+      </GlassBadge>
+    </div>
+    <h4 className="text-xs font-bold text-[#151515]">
+      {clause.title}
+    </h4>
+    <p className="text-[11px] text-[#6F6A64] mt-1 line-clamp-2 leading-relaxed">
+      {clause.summary}
+    </p>
+    <div className="mt-2 flex items-center justify-between text-[11px] text-[#FF6B22] font-semibold pt-2 border-t border-stone-200/50">
+      <span>Page {clause.pageNumber}</span>
+      <span className="flex items-center gap-0.5 hover:underline">
+        View Clause Excerpt →
+      </span>
+    </div>
+  </div>
+));
+
+const MemoizedRiskCard = memo(({ risk, onInspectSource }: { risk: RiskItem; onInspectSource: (clauseRef: string) => void }) => (
+  <div className="glass-card p-4 rounded-2xl border border-white/80 space-y-2">
+    <div className="flex items-center justify-between">
+      <span className="text-[11px] font-bold uppercase text-[#FF6B22]">
+        {risk.clauseRef}
+      </span>
+      <GlassBadge 
+        variant={risk.level === 'critical' ? 'warning' : 'neutral'}
+      >
+        {risk.level === 'critical' ? 'Priority Flag' : 'Caution'}
+      </GlassBadge>
+    </div>
+
+    <h4 className="text-xs font-bold text-[#151515]">
+      {risk.title}
+    </h4>
+
+    <p className="text-xs text-[#6F6A64] leading-relaxed">
+      {risk.description}
+    </p>
+
+    <div className="p-2.5 rounded-xl bg-white/80 border border-stone-200 text-xs">
+      <span className="font-semibold text-emerald-800">Recommendation: </span>
+      <span className="text-stone-700">{risk.recommendation}</span>
+    </div>
+
+    <div className="pt-2 flex items-center justify-between text-[11px]">
+      <span className="text-stone-500 font-medium">
+        Impact: {risk.potentialImpact}
+      </span>
+      <button
+        onClick={() => onInspectSource(risk.clauseRef)}
+        className="text-[#FF6B22] font-semibold hover:underline cursor-pointer"
+      >
+        Inspect Source
+      </button>
+    </div>
+  </div>
+));
 
 export const LegalGraphScreen: React.FC = () => {
   const { 
@@ -263,34 +334,11 @@ export const LegalGraphScreen: React.FC = () => {
                 c.section.toLowerCase().includes(clauseSearch.toLowerCase()) ||
                 c.summary.toLowerCase().includes(clauseSearch.toLowerCase())
               ).map((clause) => (
-                <div
+                <MemoizedClauseCard
                   key={clause.id}
-                  onClick={() => openEvidence(clause)}
-                  className="glass-card glass-card-hover p-3.5 rounded-2xl cursor-pointer border border-white/80"
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-[#FF6B22]">
-                      {clause.section}
-                    </span>
-                    <GlassBadge 
-                      variant={clause.riskLevel === 'high' ? 'warning' : 'neutral'}
-                    >
-                      {clause.riskLevel === 'high' ? 'High Impact' : 'Standard'}
-                    </GlassBadge>
-                  </div>
-                  <h4 className="text-xs font-bold text-[#151515]">
-                    {clause.title}
-                  </h4>
-                  <p className="text-[11px] text-[#6F6A64] mt-1 line-clamp-2 leading-relaxed">
-                    {clause.summary}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#FF6B22] font-semibold pt-2 border-t border-stone-200/50">
-                    <span>Page {clause.pageNumber}</span>
-                    <span className="flex items-center gap-0.5 hover:underline">
-                      View Clause Excerpt →
-                    </span>
-                  </div>
-                </div>
+                  clause={clause}
+                  onOpenEvidence={openEvidence}
+                />
               ))}
             </div>
           </div>
@@ -308,49 +356,14 @@ export const LegalGraphScreen: React.FC = () => {
 
             <div className="space-y-3">
               {RENTAL_RISKS.map((risk) => (
-                <div
+                <MemoizedRiskCard
                   key={risk.id}
-                  className="glass-card p-4 rounded-2xl border border-white/80 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase text-[#FF6B22]">
-                      {risk.clauseRef}
-                    </span>
-                    <GlassBadge 
-                      variant={risk.level === 'critical' ? 'warning' : 'neutral'}
-                    >
-                      {risk.level === 'critical' ? 'Priority Flag' : 'Caution'}
-                    </GlassBadge>
-                  </div>
-
-                  <h4 className="text-xs font-bold text-[#151515]">
-                    {risk.title}
-                  </h4>
-
-                  <p className="text-xs text-[#6F6A64] leading-relaxed">
-                    {risk.description}
-                  </p>
-
-                  <div className="p-2.5 rounded-xl bg-white/80 border border-stone-200 text-xs">
-                    <span className="font-semibold text-emerald-800">Recommendation: </span>
-                    <span className="text-stone-700">{risk.recommendation}</span>
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between text-[11px]">
-                    <span className="text-stone-500 font-medium">
-                      Impact: {risk.potentialImpact}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const cl = RENTAL_CLAUSES.find(c => c.section === risk.clauseRef);
-                        if (cl) openEvidence(cl);
-                      }}
-                      className="text-[#FF6B22] font-semibold hover:underline cursor-pointer"
-                    >
-                      Inspect Source
-                    </button>
-                  </div>
-                </div>
+                  risk={risk}
+                  onInspectSource={(clauseRef) => {
+                    const cl = RENTAL_CLAUSES.find(c => c.section === clauseRef);
+                    if (cl) openEvidence(cl);
+                  }}
+                />
               ))}
             </div>
           </div>

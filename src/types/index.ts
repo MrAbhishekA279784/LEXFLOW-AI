@@ -251,3 +251,19 @@ export interface LawyerPrepKit {
 
 export type LawyerKitData = LawyerPrepKit;
 
+export interface UserPreferences {
+  language: 'english' | 'hinglish';
+  responseStyle: 'concise' | 'balanced' | 'detailed';
+  explanationPreference: 'simple' | 'technical';
+}
+
+export interface StructuralDiffItem {
+  clauseName: string;
+  type: 'modified' | 'added' | 'removed' | 'unchanged';
+  docAPage?: number;
+  docBPage?: number;
+  docAText?: string;
+  docBText?: string;
+  severity?: string;
+}
+

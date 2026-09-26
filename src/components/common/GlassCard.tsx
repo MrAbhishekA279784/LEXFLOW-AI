@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { motion, HTMLMotionProps } from 'motion/react';
+import { motion, HTMLMotionProps, PanInfo } from 'motion/react';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 interface GlassCardProps extends HTMLMotionProps<'div'> {
@@ -39,7 +39,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     onClick?.(e);
   };
 
-  const handleCardTap = (event: MouseEvent | TouchEvent | PointerEvent, info: any) => {
+  const handleCardTap = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (haptic && (interactive || onClick || onTap)) {
       triggerHaptic('light');
     }

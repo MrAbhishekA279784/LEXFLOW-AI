@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, FileText, ShieldCheck, AlertCircle, Copy, Check } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
@@ -8,6 +8,19 @@ import { GlassBadge } from './GlassBadge';
 export const EvidenceModal: React.FC = () => {
   const { selectedEvidenceClause, closeEvidence, activeDocument } = useApp();
   const [copied, setCopied] = React.useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedEvidenceClause) return;
+    modalRef.current?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeEvidence();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedEvidenceClause, closeEvidence]);
 
   if (!selectedEvidenceClause) return null;
 
@@ -31,11 +44,16 @@ export const EvidenceModal: React.FC = () => {
 
         {/* Modal / Bottom Sheet */}
         <motion.div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="evidence-modal-title"
+          tabIndex={-1}
           initial={{ y: '100%', opacity: 0.5 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 0 }}
           transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-          className="relative z-10 w-full max-w-lg glass-panel bg-white/95 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-white/80 max-h-[85vh] overflow-y-auto"
+          className="relative z-10 w-full max-w-lg glass-panel bg-white/95 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-white/80 max-h-[85vh] overflow-y-auto outline-none"
         >
           {/* Header */}
           <div className="flex items-start justify-between pb-4 border-b border-stone-200/60">
@@ -57,7 +75,7 @@ export const EvidenceModal: React.FC = () => {
                     </GlassBadge>
                   )}
                 </div>
-                <h3 className="text-base font-bold text-[#151515] mt-0.5">
+                <h3 id="evidence-modal-title" className="text-base font-bold text-[#151515] mt-0.5">
                   {selectedEvidenceClause.title}
                 </h3>
               </div>
@@ -65,6 +83,7 @@ export const EvidenceModal: React.FC = () => {
 
             <button
               onClick={closeEvidence}
+              aria-label="Close evidence panel"
               className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
@@ -90,6 +109,7 @@ export const EvidenceModal: React.FC = () => {
               </span>
               <button
                 onClick={handleCopy}
+                aria-label="Copy verbatim excerpt to clipboard"
                 className="text-xs text-[#FF6B22] hover:underline flex items-center gap-1 font-medium cursor-pointer"
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -117,7 +137,7 @@ export const EvidenceModal: React.FC = () => {
             <p className="text-[11px] text-[#6F6A64] max-w-[280px]">
               Verified against extracted legal text · Immutable evidence trace
             </p>
-            <GlassButton size="sm" variant="dark" onClick={closeEvidence}>
+            <GlassButton size="sm" variant="dark" onClick={closeEvidence} aria-label="Close evidence modal">
               Done
             </GlassButton>
           </div>

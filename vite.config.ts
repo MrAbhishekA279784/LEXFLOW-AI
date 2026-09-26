@@ -32,23 +32,29 @@ export default defineConfig(() => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 600,
+      chunkSizeWarningLimit: 300,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('@xyflow') || id.includes('reactflow')) {
-                return 'vendor-xyflow';
-              }
-              if (id.includes('lucide-react')) {
-                return 'vendor-icons';
-              }
-              if (id.includes('firebase') || id.includes('@supabase')) {
-                return 'vendor-auth-db';
-              }
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor-react';
-              }
+            if (!id.includes('node_modules')) return;
+
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('@xyflow') || id.includes('reactflow')) {
+              return 'vendor-xyflow';
+            }
+            if (id.includes('motion') || id.includes('framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('canvas-confetti')) {
+              return 'vendor-effects';
             }
           },
         },

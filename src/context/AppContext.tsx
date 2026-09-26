@@ -7,7 +7,9 @@ import {
   ChatMessage, 
   UserProfile,
   DocumentVersion,
-  VersionChangeItem
+  VersionChangeItem,
+  UserPreferences,
+  LawyerPrepKit
 } from '../types';
 import { ComplianceAuditRecord } from '../types/complianceAuditTypes';
 import { LegalGraph } from '../backend/types/backendTypes';
@@ -36,7 +38,7 @@ export interface AppContextType {
   goBack: () => void;
   user: UserProfile;
   setUser: (user: UserProfile) => void;
-  updateUserProfile: (updatedData: { name?: string; avatarUrl?: string; preferences?: any }) => Promise<boolean>;
+  updateUserProfile: (updatedData: { name?: string; avatarUrl?: string; preferences?: UserPreferences }) => Promise<boolean>;
   handleSignOut: () => Promise<void>;
   enterGuestMode: () => void;
   isAuthLoading: boolean;
@@ -95,10 +97,10 @@ export interface AppContextType {
   closeEvidence: () => void;
 
   // Lawyer prep kit modal & state
-  activeLawyerKit: any | null;
+  activeLawyerKit: LawyerPrepKit | null;
   isLawyerKitLoading: boolean;
-  fetchLawyerKit: (docId?: string) => Promise<any | null>;
-  generateLawyerKit: (docId?: string, scenarioId?: string) => Promise<any | null>;
+  fetchLawyerKit: (docId?: string) => Promise<LawyerPrepKit | null>;
+  generateLawyerKit: (docId?: string, scenarioId?: string) => Promise<LawyerPrepKit | null>;
   downloadLawyerKitPdf: (docId?: string) => Promise<void>;
   isBriefModalOpen: boolean;
   setIsBriefModalOpen: (open: boolean) => void;
@@ -139,7 +141,7 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedEvidenceClause, setSelectedEvidenceClause] = useState<ClauseItem | null>(null);
   const [isBriefModalOpen, setIsBriefModalOpen] = useState<boolean>(false);
   const [isGraphExportModalOpen, setIsGraphExportModalOpen] = useState<boolean>(false);
-  const [activeLawyerKit, setActiveLawyerKit] = useState<any | null>(null);
+  const [activeLawyerKit, setActiveLawyerKit] = useState<LawyerPrepKit | null>(null);
   const [isLawyerKitLoading, setIsLawyerKitLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -184,7 +186,7 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const updateUserProfile = async (updatedData: {
     name?: string;
     avatarUrl?: string;
-    preferences?: any;
+    preferences?: UserPreferences;
   }): Promise<boolean> => {
     try {
       const token = await getAuthToken();
@@ -409,7 +411,7 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const openEvidence = (clause: ClauseItem) => setSelectedEvidenceClause(clause);
   const closeEvidence = () => setSelectedEvidenceClause(null);
 
-  const fetchLawyerKit = async (docId?: string): Promise<any | null> => {
+  const fetchLawyerKit = async (docId?: string): Promise<LawyerPrepKit | null> => {
     const targetDocId = docId || docCtx.activeDocument?.id || 'doc-rental';
     try {
       setIsLawyerKitLoading(true);
@@ -433,7 +435,7 @@ const AppStateProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const generateLawyerKit = async (docId?: string, scenarioId?: string): Promise<any | null> => {
+  const generateLawyerKit = async (docId?: string, scenarioId?: string): Promise<LawyerPrepKit | null> => {
     const targetDocId = docId || docCtx.activeDocument?.id || 'doc-rental';
     try {
       setIsLawyerKitLoading(true);

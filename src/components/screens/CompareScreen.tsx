@@ -84,7 +84,6 @@ export const CompareScreen: React.FC = () => {
       setHasCompared(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to compare documents. Please verify both documents exist.';
-      console.error('Comparison error:', err);
       setError(msg);
     } finally {
       setIsComparing(false);

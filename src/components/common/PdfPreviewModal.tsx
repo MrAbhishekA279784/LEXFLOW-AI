@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Download, Printer, CheckCircle2, Shield, Scale, FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -7,6 +7,19 @@ import { GlassButton } from './GlassButton';
 
 export const PdfPreviewModal: React.FC = () => {
   const { isBriefModalOpen, setIsBriefModalOpen, activeDocument, activeScenario, user } = useApp();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isBriefModalOpen) return;
+    modalRef.current?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsBriefModalOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isBriefModalOpen, setIsBriefModalOpen]);
 
   if (!isBriefModalOpen) return null;
 
@@ -32,27 +45,33 @@ export const PdfPreviewModal: React.FC = () => {
         />
 
         <motion.div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pdf-modal-title"
+          tabIndex={-1}
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="relative z-10 w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-stone-200 text-[#151515] max-h-[90vh] overflow-y-auto"
+          className="relative z-10 w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-stone-200 text-[#151515] max-h-[90vh] overflow-y-auto outline-none"
         >
           {/* Action Bar */}
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100 print:hidden">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-[#FF6B22] uppercase tracking-wider">
+              <span id="pdf-modal-title" className="text-sm font-bold text-[#FF6B22] uppercase tracking-wider">
                 1-Page Legal Brief Preview
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <GlassButton size="sm" variant="secondary" icon={<Printer className="w-4 h-4" />} onClick={handleDownload}>
+              <GlassButton size="sm" variant="secondary" icon={<Printer className="w-4 h-4" />} onClick={handleDownload} aria-label="Print legal brief">
                 Print
               </GlassButton>
-              <GlassButton size="sm" variant="primary" icon={<Download className="w-4 h-4" />} onClick={handleDownload}>
+              <GlassButton size="sm" variant="primary" icon={<Download className="w-4 h-4" />} onClick={handleDownload} aria-label="Download legal brief PDF">
                 Download PDF
               </GlassButton>
               <button
                 onClick={() => setIsBriefModalOpen(false)}
+                aria-label="Close legal brief preview"
                 className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center cursor-pointer ml-1"
               >
                 <X className="w-4 h-4" />

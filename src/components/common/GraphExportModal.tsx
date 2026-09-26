@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -30,6 +30,20 @@ export const GraphExportModal: React.FC = () => {
     activeDocument,
     currentGraph
   } = useApp();
+
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isGraphExportModalOpen) return;
+    modalRef.current?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsGraphExportModalOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isGraphExportModalOpen, setIsGraphExportModalOpen]);
 
   const [format, setFormat] = useState<'svg' | 'png'>('png');
   const [scale, setScale] = useState<1 | 2 | 3>(2);
@@ -132,12 +146,17 @@ export const GraphExportModal: React.FC = () => {
 
         {/* Modal Container */}
         <motion.div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="graph-export-title"
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.94, y: 20, rotateX: 4 }}
           animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 20, rotateX: 4 }}
           transition={{ type: 'spring', damping: 26, stiffness: 320 }}
           style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
-          className="relative w-full max-w-5xl max-h-[92vh] glass-panel bg-[#FAF8F5]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/90 overflow-hidden flex flex-col z-10"
+          className="relative w-full max-w-5xl max-h-[92vh] glass-panel bg-[#FAF8F5]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/90 overflow-hidden flex flex-col z-10 outline-none"
         >
           {/* Header Bar */}
           <div className="px-6 py-4 bg-white/85 backdrop-blur-md border-b border-stone-200/70 flex items-center justify-between shrink-0">
@@ -147,7 +166,7 @@ export const GraphExportModal: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-[#151515]">Export Legal Action Graph</h2>
+                  <h2 id="graph-export-title" className="text-base font-bold text-[#151515]">Export Legal Action Graph</h2>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FF6B22]/10 text-[#FF6B22] border border-[#FF6B22]/20 uppercase tracking-tight">
                     Formal Brief Ready
                   </span>
@@ -160,6 +179,7 @@ export const GraphExportModal: React.FC = () => {
 
             <button
               onClick={() => setIsGraphExportModalOpen(false)}
+              aria-label="Close graph export dialog"
               className="w-8 h-8 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-500 hover:text-[#151515] transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />

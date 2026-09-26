@@ -20,10 +20,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ContextBuilder, AnalysisContext } from './context/contextBuilder';
 import { getUserAIContext } from './context/personalizationContext';
-import { OpposingCounselAgent } from './agents/opposingCounselAgent';
-import { DefenseAgent } from './agents/defenseAgent';
-import { ComplianceReviewerAgent } from './agents/complianceReviewerAgent';
-import { SkepticAgent } from './agents/skepticAgent';
+import { OpposingCounselAgent, OpposingCounselResult } from './agents/opposingCounselAgent';
+import { DefenseAgent, DefenseResult } from './agents/defenseAgent';
+import { ComplianceReviewerAgent, ComplianceReviewerResult } from './agents/complianceReviewerAgent';
+import { SkepticAgent, SkepticResult } from './agents/skepticAgent';
 import { MultiAgentDebateEngine } from './debate/debateEngine';
 import { FullDebateRecord } from './debate/debateSchemas';
 import { SynthesisEngine, SynthesizedAnalysisResult } from './synthesis/synthesisEngine';
@@ -84,10 +84,10 @@ export class MasterAIOrchestrator {
     }
 
     // STEP 3: Execute Agents based on mode
-    let opposingResult: any = { agent: 'opposing_counsel', findings: [], evidence: [], status: 'completed' };
-    let defenseResult: any = { agent: 'defense_protection', protections: [], counterpoints: [], evidence: [], status: 'completed' };
-    let reviewerResult: any = { agent: 'compliance_reviewer', findings: [], evidence: [], status: 'completed' };
-    let skepticResult: any = { agent: 'skeptic', challenges: [], overallVerificationSummary: '', status: 'completed' };
+    let opposingResult: OpposingCounselResult = { agent: 'opposing_counsel', findings: [], evidence: [], status: 'completed' } as OpposingCounselResult;
+    let defenseResult: DefenseResult = { agent: 'defense_protection', protections: [], counterpoints: [], evidence: [], status: 'completed' } as DefenseResult;
+    let reviewerResult: ComplianceReviewerResult = { agent: 'compliance_reviewer', findings: [], evidence: [], status: 'completed' } as ComplianceReviewerResult;
+    let skepticResult: SkepticResult = { agent: 'skeptic', challenges: [], overallVerificationSummary: '', status: 'completed' } as SkepticResult;
     const debates: FullDebateRecord[] = [];
 
     if (mode === 'FULL_AUDIT' || mode === 'SCENARIO_STRESS_TEST') {
